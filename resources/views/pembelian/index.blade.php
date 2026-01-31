@@ -352,45 +352,93 @@
                     <thead>
                         <tr>
                             <th>Supplier</th>
+                            <th>Gudang</th>
                             <th>Total</th>
-                            <th>Modified By</th>
+                            <th>Created By</th>
                             <th>Created At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($pembelian as $item)
-                            <tr onclick="window.location='{{ route('rincianpembelian.index', ['pembelian_id' => $item->id]) }}'">
+                        @foreach($pembelians as $item)
+                        <tr data-created-by="{{ $item->user->id }}" onclick="window.location='{{ route('rincianpembelian.index', ['pembelian_id' => $item->id]) }}'">                                
                                 <td data-label="Name">{{ $item->supplier->name }}</td>
-                                <td data-label="Total">Rp. {{ $item->total }}</td>
-                                <td data-label="Modified By">{{ $item->user->name }}</td>
-                                <td data-label="Created At">{{ $item->created_at->format('Y-m-d') }}</td>
-                                <td data-label="Action" class="action-icons">
-                                    <a href="{{ route('pembelian.edit', $item->id) }}" class="edit-button"><i class="fas fa-edit"></i></a>
-                                    <form action="{{ route('pembelian.destroy', $item->id) }}" method="POST" style="display: inline;">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="delete" style="background: none; border: none; cursor: pointer;" onclick="confirmation(event)">
+                                <td data-label="Gudang">{{ $item->gudang->name }}</td>
+                                <td data-label="Total">Rp. {{ number_format($item->total, 0, ',', '.') }}</td>
+                                <td data-label="Created By">{{ $item->user->name }}</td>
+                                <td data-label="Created At">{{ $item->created_at->format('d-m-Y') }}</td>
+                                <td data-label="Actions">
+                                    <div class="action-icons">
+                                        <a href="{{ route('pembelian.edit', $item->id) }}" class="edit">
+                                            <i class="fas fa-edit"></i>
+                                        </a>
+                                        <form action="{{ route('pembelian.destroy', $item->id) }}" method="POST" style="display:inline;">
+                                            @csrf
+                                            @method('DELETE')
+                                            <button type="submit" class="delete" style="background: none; border: none; cursor: pointer;" onclick="confirmation(event)">
                                             <i class="fas fa-trash-alt"></i>
                                         </button>
-                                    </form>
+                                        </form>
+                                    </div>
                                 </td>
                             </tr>
                         @endforeach
                     </tbody>
                 </table>
+
+                <div class="pagination">
+    @if ($pembelians->hasPages())
+        <ul style="display: flex; list-style-type: none; padding: 0; margin: 0;">
+            {{-- Previous Page Link --}}
+            @if ($pembelians->onFirstPage())
+                <li style="display: inline-block; margin: 0 15px; color: #888; cursor: not-allowed;"><span>&laquo;</span></li>
+            @else
+                <li style="display: inline-block; margin: 0 15px;">
+                    <a href="{{ $pembelians->previousPageUrl() }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">&laquo;</a>
+                </li>
+            @endif
+
+            {{-- Pagination Elements --}}
+            @foreach ($pembelians->appends(['search' => $search])->links()->elements[0] as $page => $url)
+                @if ($page == $pembelians->currentPage())
+                    <li style="display: inline-block; margin: 0 15px; font-weight: bold; color: azure;">
+                        <span>{{ $page }}</span>
+                    </li>
+                @else
+                    <li style="display: inline-block; margin: 0 15px;">
+                        <a href="{{ $url }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">{{ $page }}</a>
+                    </li>
+                @endif
+            @endforeach
+
+            {{-- Next Page Link --}}
+            @if ($pembelians->hasMorePages())
+                <li style="display: inline-block; margin: 0 15px;">
+                    <a href="{{ $pembelians->nextPageUrl() }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">&raquo;</a>
+                </li>
+            @else
+                <li style="display: inline-block; margin: 0 15px; color: #888; cursor: not-allowed;"><span>&raquo;</span></li>
+            @endif
+        </ul>
+    @endif
+</div>
             </section>
         </main>
     </div>
+
     <script>
+    let userLevel = {{ Auth::user()->level }}; // User's level (1 or 2)
+    let userId = {{ Auth::user()->id }}; // User's ID
 
-function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const backdrop = document.getElementById('backdrop');
-            sidebar.classList.toggle('show');
-            backdrop.classList.toggle('show');
-        }
+    // Function to toggle sidebar visibility
+    function toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('backdrop');
+        sidebar.classList.toggle('show');
+        backdrop.classList.toggle('show');
+    }
 
+    // Confirmation dialog for deletion
     function confirmation(event) {
         event.stopPropagation(); // Stop the event from propagating to the <tr> click event
         event.preventDefault();   // Prevent the form from submitting immediately
@@ -404,11 +452,33 @@ function toggleSidebar() {
         })
         .then((willDelete) => {
             if (willDelete) {
-                // If the user confirms, submit the form
                 event.target.closest('form').submit();
             }
         });
     }
-</script>
+
+    // Disable edit/delete buttons based on user level and ownership
+    document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('tbody tr').forEach(function (row) {
+            let createdBy = parseInt(row.getAttribute('data-created-by')); // User ID who created the record
+            let editButton = row.querySelector('.edit');
+            let deleteButton = row.querySelector('.delete');
+
+            // Check if the user is level 1 and doesn't own this record
+            if (userLevel === 1 && userId !== createdBy) {
+                // Hide edit and delete buttons for level 1 users who don't own the record
+                if (editButton) {
+                    editButton.style.display = 'none';
+                }
+                if (deleteButton) {
+                    deleteButton.style.display = 'none';
+                }
+            }
+        });
+    });
+    </script>
+</body>
+</html>
+
 </body>
 </html>

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Pembelian;
 use App\Models\Ekonomi;
 use App\Models\Stock;
+use App\Models\Gudang;
+use App\Models\GudangStock;
 use App\Models\RincianPembelian;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;  // For logging
@@ -24,7 +26,8 @@ class RincianPembelianController extends Controller
     {
         $pembelian = Pembelian::findOrFail($pembelian_id);
         $stocks = Stock::where('suppliers_id', $pembelian->suppliers_id)->get();
-        return view('rincianpembelian.create', compact('pembelian', 'stocks'));
+        $gudangs = Gudang::all();
+        return view('rincianpembelian.create', compact('pembelian', 'stocks', 'gudangs'));
     }
 
 
@@ -38,6 +41,7 @@ class RincianPembelianController extends Controller
             'items.new.*.name' => 'nullable|string',
             'items.new.*.quantity' => 'nullable|integer|min:0',
             'items.new.*.price' => 'nullable|numeric|min:0',
+            'items.new.*.gudangs_id' => 'nullable|string',
             'items.new.*.kode' => 'nullable|string',
             'items.existing.*.name' => 'required|string|exists:stocks,name',
             'items.existing.*.quantity' => 'required|integer|min:0',
@@ -74,6 +78,22 @@ class RincianPembelianController extends Controller
                         'price' => $price,
                         'total' => $price * $quantity,
                     ]);
+
+                    $pembelian = Pembelian::findOrFail($pembelianId);
+                    $gudangId = $pembelian->gudangs_id;
+
+                    GudangStock::create([
+                        'stocks_id' => $stock->id,
+                        'gudangs_id' => $gudangId,
+                        'quantity' => $quantity,
+                    ]);
+
+                    $sum = GudangStock::where('stocks_id', $stock->id)
+                    ->sum('quantity');
+
+                    // Update stock quantity
+                    $stock->stock = $sum;
+                    $stock->save();
                 }
             }
         }
@@ -81,10 +101,11 @@ class RincianPembelianController extends Controller
         // Handle existing items
         if (isset($items['existing']) && is_array($items['existing'])) {
             foreach ($items['existing'] as $existingItem) {
+                // Find the stock by name
                 $stock = Stock::where('name', $existingItem['name'])->first();
-    
+
                 if ($stock) {
-                    // Create rincian pembelian entry for existing items
+                    // Create a rincian pembelian entry for the existing item
                     RincianPembelian::create([
                         'pembelian_id' => $pembelianId,
                         'stocks_id' => $stock->id,
@@ -92,15 +113,38 @@ class RincianPembelianController extends Controller
                         'price' => $existingItem['price'],
                         'total' => $existingItem['price'] * $existingItem['quantity'],
                     ]);
-    
-                    // Update stock quantity
-                    $stock->beli = $existingItem['price'];  // Update beli
-                    $stock->stock += $existingItem['quantity'];
-    
+
+                    // Find the pembelian and retrieve the related gudang
+                    $pembelian = Pembelian::findOrFail($pembelianId);
+                    $gudangId = $pembelian->gudangs_id;
+
+                    // Update the gudang stock for the specific gudang and stock combination
+                    $gudangStock = GudangStock::where('stocks_id', $stock->id)
+                                            ->where('gudangs_id', $gudangId)
+                                            ->first();
+
+                    if ($gudangStock) {
+                        // Increment the existing gudang stock quantity
+                        $gudangStock->increment('quantity', $existingItem['quantity']);
+                    } else {
+                        // Create a new gudang stock entry if it doesn't exist
+                        GudangStock::create([
+                            'stocks_id' => $stock->id,
+                            'gudangs_id' => $gudangId,
+                            'quantity' => $existingItem['quantity'],
+                        ]);
+                    }
+
+                    // Update the stock purchase price (beli) and increment stock quantity
+                    $stock->beli = $existingItem['price'];  // Update the beli field
+                    $stock->stock += $existingItem['quantity'];  // Increment the stock quantity
+
+                    // Save the updated stock
                     $stock->save();
                 }
             }
         }
+
         
     
         return redirect()->route('rincianpembelian.index', $pembelianId)->with('success', 'Items added and updated successfully');
@@ -112,7 +156,8 @@ class RincianPembelianController extends Controller
         $rincianpembelian = RincianPembelian::findOrFail($id);
         $pembelian = Pembelian::findOrFail($rincianpembelian->pembelian_id);
         $stock = Stock::findOrFail($rincianpembelian->stocks_id);
-        return view('rincianpembelian.edit', compact('rincianpembelian', 'stock', 'pembelian'));
+        $gudangs = Gudang::all();
+        return view('rincianpembelian.edit', compact('rincianpembelian', 'stock', 'pembelian', 'gudangs'));
     }
 
 
@@ -122,6 +167,7 @@ class RincianPembelianController extends Controller
         $rincianPembelian = RincianPembelian::findOrFail($id);
         $stock = Stock::findOrFail($rincianPembelian->stocks_id);
         $pembelian = Pembelian::findOrFail($rincianPembelian->pembelian_id);
+        $gudangId = $pembelian->gudangs_id;
     
         // Validate the incoming request data
         $validated = $request->validate([
@@ -137,41 +183,61 @@ class RincianPembelianController extends Controller
         $rincianPembelian->quantity = $validated['quantity'];
         $rincianPembelian->price = $validated['price'];
         $rincianPembelian->total = $validated['quantity'] * $validated['price'];
-        $stock->kode = $validated['kode'];  // Update kode
-        $stock->beli = $validated['price'];  // Update beli
         $rincianPembelian->save();
     
-        // Adjust the stock quantity based on whether the new quantity is greater or smaller
+        // Update stock details (beli and kode)
+        $stock->beli = $validated['price'];
+        $stock->kode = $validated['kode'];
+        
+        // Update GudangStock accordingly
+        $gudangStock = GudangStock::where('stocks_id', $stock->id)
+            ->where('gudangs_id', $gudangId)
+            ->firstOrFail();
+    
+        // Adjust the stock quantity based on the old and new quantities
         if ($validated['quantity'] > $oldQuantity) {
-            $stock->stock += ($validated['quantity'] - $oldQuantity);
+            $incrementAmount = $validated['quantity'] - $oldQuantity;
+            $gudangStock->increment('quantity', $incrementAmount);
         } elseif ($validated['quantity'] < $oldQuantity) {
-            $stock->stock -= ($oldQuantity - $validated['quantity']);
+            $decrementAmount = $oldQuantity - $validated['quantity'];
+            $gudangStock->decrement('quantity', $decrementAmount);
         }
     
-        // Save the updated stock quantity
+        // Calculate and update the total stock quantity across all GudangStock entries
+        $totalStockQuantity = GudangStock::where('stocks_id', $stock->id)->sum('quantity');
+        $stock->stock = $totalStockQuantity;
         $stock->save();
     
-    
-        return redirect()->route('rincianpembelian.index', ['pembelian_id' => $rincianPembelian->pembelian_id])->with('success', 'Rincian pembelian updated successfully.');
+        return redirect()->route('rincianpembelian.index', ['pembelian_id' => $rincianPembelian->pembelian_id])
+            ->with('success', 'Rincian pembelian updated successfully.');
     }
     
-
-
-
     public function destroy($id)
     {
         $rincianPembelian = RincianPembelian::findOrFail($id);
-        $stock = Stock::findOrFail($rincianPembelian->stocks_id);  // Use findOrFail
-        $pembelian = Pembelian::findOrFail($rincianPembelian->pembelian_id);  // Use findOrFail
-
-        // Update the stock quantity
-        $stock->stock -= $rincianPembelian->quantity;
+        $stock = Stock::findOrFail($rincianPembelian->stocks_id);
+        $pembelian = Pembelian::findOrFail($rincianPembelian->pembelian_id);
+        $gudangId = $pembelian->gudangs_id;
+    
+        // Find the relevant GudangStock and decrement its quantity
+        $gudangStock = GudangStock::where('stocks_id', $stock->id)
+            ->where('gudangs_id', $gudangId)
+            ->firstOrFail();
+    
+        // Decrement the GudangStock quantity
+        $gudangStock->decrement('quantity', $rincianPembelian->quantity);
+    
+        // Calculate the new total stock quantity across all GudangStock entries
+        $totalStockQuantity = GudangStock::where('stocks_id', $stock->id)->sum('quantity');
+        $stock->stock = $totalStockQuantity;
         $stock->save();
-
+    
         // Delete the RincianPembelian record
         $rincianPembelian->delete();
-        
-        return redirect()->route('rincianpembelian.index', ['pembelian_id' => $rincianPembelian->pembelian_id])->with('success', 'Rincian pembelian deleted successfully.');
+    
+        return redirect()->route('rincianpembelian.index', ['pembelian_id' => $rincianPembelian->pembelian_id])
+            ->with('success', 'Rincian pembelian deleted successfully.');
     }
+    
 
 }

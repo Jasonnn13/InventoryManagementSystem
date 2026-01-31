@@ -136,8 +136,8 @@
                 <label for="remember_me">Remember me</label>
             </div>
             <div class="buttons">
-                <button type="submit" class="btn btn-primary">Log in</button>
                 <a href="{{ route('register') }}">Register</a>
+                <button type="submit" class="btn btn-primary">Log in</button>
             </div>
         </form>
         <div class="forgot-password">

@@ -307,8 +307,8 @@
             display: block;
             margin-bottom: 5px; /* Space between label and data */
         }
-
     }
+
     </style>
 </head>
 <body>
@@ -352,7 +352,7 @@
                 @endphp
 
                 @foreach($stocks as $stock)
-                    @if($stock->jual == 0)
+                    @if($stock->stock->jual == 0)
                         @php
                             $hasZeroHargaJual = true;
                         @endphp
@@ -367,15 +367,18 @@
 
                 <div class="category-header">
                     <h3>Stocks List</h3>
-                    <a href="{{ route('stocks.create') }}" class="btn btn-primary">Add Stock</a>
-                </div>
+                    <div>
+                        <a href="{{ route('stocks.create') }}" class="btn btn-primary">Add Stock</a>
+                        <a href="{{ route('gudangs.index') }}" class="btn btn-primary">Gudang</a></div>
+                    </div>
                 <table>
                     <thead>
                         <tr>
                             <th>Name</th>
+                            <th>Gudang</th>
                             <th>Kode</th>
                             <th>Stocks</th>
-                            <th>Supplier</th>
+                            <!-- <th>Supplier</th> -->
                             <th>Harga Beli</th>
                             <th>Harga Jual</th>
                             <th>Actions</th>
@@ -384,15 +387,16 @@
                     <tbody>
                         @foreach($stocks as $stock)
                             @php
-                                $isOverdue = $stock->jual == 0 || empty($stock->jual);
+                                $isOverdue = $stock->stock->jual == 0 || empty($stock->stock->jual);
                             @endphp
                             <tr class="{{ $isOverdue ? 'overdue' : '' }}">
-                                <td data-label="Name">{{ $stock->name }}</td>
-                                <td data-label="Kode">{{ $stock->kode }}</td>
-                                <td data-label="Stocks">{{ $stock->stock }}</td>
-                                <td data-label="Supplier">{{ $stock->supplier->name ?? 'No Supplier' }}</td>
-                                <td data-label="Harga Beli">{{ $stock->beli }}</td>
-                                <td data-label="Harga Jual">{{ $stock->jual }}</td>
+                                <td data-label="Name">{{ $stock->stock->name }}</td>
+                                <td data-label="Gudang">{{ $stock->gudang->name }}</td>
+                                <td data-label="Kode">{{ $stock->stock->kode }}</td>
+                                <td data-label="Stocks">{{ $stock->quantity }}</td>
+                                <!-- <td data-label="Supplier">{{ $stock->supplier->name ?? 'No Supplier' }}</td> -->
+                                <td data-label="Harga Beli">Rp. {{ number_format($stock->stock->beli, 0, ',', '.') }}</td>
+                                <td data-label="Harga Jual">Rp. {{ number_format($stock->stock->jual, 0, ',', '.') }}</td>
                                 <td data-label="Actions">
                                     <div class="action-icons">
                                         <a href="{{ route('stocks.edit', $stock->id) }}" class="edit">
@@ -411,6 +415,47 @@
                         @endforeach
                     </tbody>
                 </table>
+
+<div class="pagination">
+    @if ($stocks->hasPages())
+        <ul style="display: flex; list-style-type: none; padding: 0; margin: 0;">
+            {{-- Previous Page Link --}}
+            @if ($stocks->onFirstPage())
+                <li style="display: inline-block; margin: 0 15px; color: #888; cursor: not-allowed;"><span>&laquo;</span></li>
+            @else
+                <li style="display: inline-block; margin: 0 15px;">
+                    <a href="{{ $stocks->previousPageUrl() }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">&laquo;</a>
+                </li>
+            @endif
+
+            {{-- Pagination Elements --}}
+            @foreach ($stocks->appends(['search' => $search])->links()->elements[0] as $page => $url)
+                @if ($page == $stocks->currentPage())
+                    <li style="display: inline-block; margin: 0 15px; font-weight: bold; color: azure;">
+                        <span>{{ $page }}</span>
+                    </li>
+                @else
+                    <li style="display: inline-block; margin: 0 15px;">
+                        <a href="{{ $url }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">{{ $page }}</a>
+                    </li>
+                @endif
+            @endforeach
+
+            {{-- Next Page Link --}}
+            @if ($stocks->hasMorePages())
+                <li style="display: inline-block; margin: 0 15px;">
+                    <a href="{{ $stocks->nextPageUrl() }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">&raquo;</a>
+                </li>
+            @else
+                <li style="display: inline-block; margin: 0 15px; color: #888; cursor: not-allowed;"><span>&raquo;</span></li>
+            @endif
+        </ul>
+    @endif
+</div>
+
+
+
+
             </section>
         </main>
     </div>

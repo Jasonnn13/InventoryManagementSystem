@@ -249,6 +249,14 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label for="gudangs_id">Gudang</label>
+                        <select id="gudangs_id" name="gudangs_id" required>
+                            @foreach($gudangs as $gudang)
+                                <option value="{{ $gudang->id }}">{{ $gudang->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="total">Harga Akhir</label>
                         <input type="number" id="total" name="total" step="0.01" min="0" required>
                     </div>

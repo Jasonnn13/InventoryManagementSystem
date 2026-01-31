@@ -243,9 +243,14 @@
                     <div class="form-group">
                         <label for="level">Level</label>
                         <select id="level" name="level" required>
+                        @if (Auth::user()->level > 1)
                             <option value="0" {{ $user->level == 0 ? 'selected' : '' }}>Level 0</option>
                             <option value="1" {{ $user->level == 1 ? 'selected' : '' }}>Level 1</option>
                             <option value="2" {{ $user->level == 2 ? 'selected' : '' }}>Level 2</option>
+                        @else
+                            <option value="0" {{ $user->level == 0 ? 'selected' : '' }}>Level 0</option>
+                            <option value="1" {{ $user->level == 1 ? 'selected' : '' }}>Level 1</option>
+                        @endif
                         </select>
                         @error('level')
                             <div class="error" style="color: #f44336;">{{ $message }}</div>

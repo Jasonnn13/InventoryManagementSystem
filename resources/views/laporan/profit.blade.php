@@ -332,20 +332,16 @@
                 </form>
             </header>
             <section class="content">
-                <h3>Profit Report Overview</h3>
-                <div class="chart-container" id="profitChartContainer">
-                    <canvas id="profitChart"></canvas>
-                </div>
 
                 <!-- Profit Report Cards -->
                 <h3>Monthly Profit Data</h3>
                 <div class="cards-wrapper">
                     @foreach($laporans as $laporan)
                         <div class="card">
-                            <h4>{{ $laporan->tahun }} - {{ $laporan->bulan }}</h4>
-                            <p><strong>Pengeluaran:</strong> Rp. {{ number_format($laporan->pengeluaran, 2, ',', '.') }}</p>
-                            <p><strong>Pemasukan:</strong> Rp. {{ number_format($laporan->pemasukan, 2, ',', '.') }}</p>
-                            <p><strong>Profit:</strong> Rp. {{ number_format($laporan->profit, 2, ',', '.') }}</p>
+                            <h4>{{ $laporan->bulan }} - {{ $laporan->tahun }}</h4>
+                            <p><strong>Pengeluaran:</strong> Rp. {{ number_format($laporan->pengeluaran, 0, ',', '.') }}</p>
+                            <p><strong>Pemasukan:</strong> Rp. {{ number_format($laporan->pemasukan, 0, ',', '.') }}</p>
+                            <p><strong>Profit:</strong> Rp. {{ number_format($laporan->profit, 0, ',', '.') }}</p>
                         </div>
                     @endforeach
                 </div>
@@ -365,11 +361,12 @@
 
     document.addEventListener('DOMContentLoaded', function() {
         // Chart.js configuration for the profit chart
+        // Profit Chart
         var ctxProfit = document.getElementById('profitChart').getContext('2d');
         var profitChart = new Chart(ctxProfit, {
             type: 'line',
             data: {
-                labels: @json($profitMonths),
+                labels: @json($months),
                 datasets: [{
                     label: 'Profit',
                     data: @json($profitData),
@@ -410,15 +407,15 @@
                 plugins: {
                     legend: {
                         labels: {
-                            color: '#fff',
+                            color: '#fff'
                         }
                     },
                     tooltip: {
-                        callbacks: {
-                            label: function(tooltipItem) {
-                                return tooltipItem.dataset.label + ': ' + new Intl.NumberFormat('en-US', { style: 'currency', currency: 'IDR' }).format(tooltipItem.raw);
-                            }
-                        }
+                        backgroundColor: '#333',
+                        titleColor: '#fff',
+                        bodyColor: '#fff',
+                        borderColor: '#5a5a5a',
+                        borderWidth: 1
                     }
                 }
             }

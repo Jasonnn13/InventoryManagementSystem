@@ -11,7 +11,7 @@ class RincianPenjualan extends Model
 
     protected $table = 'rincianpenjualan';
 
-    protected $fillable = ['stocks_id', 'penjualan_id', 'quantity', 'price', 'total'];
+    protected $fillable = ['stocks_id', 'penjualan_id', 'quantity', 'price', 'total', 'gudangs_id'];
 
     public function stock()
     {
@@ -21,5 +21,10 @@ class RincianPenjualan extends Model
     public function penjualan()
     {
         return $this->belongsTo(Penjualan::class, 'penjualan_id');
+    }
+
+    public function gudang()
+    {
+        return $this->belongsTo(Gudang::class, 'gudangs_id');
     }
 }

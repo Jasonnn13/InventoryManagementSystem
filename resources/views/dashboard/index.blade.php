@@ -431,6 +431,12 @@
                         <div class="card-icon">📦</div>
                     </div>
                     <div class="card">
+                        <div class="card-number">{{ $countPiutang }}</div>
+                        <div class="card-title">Belum Lunas</div>
+                        <a href="{{ route('penjualan.index', ['tipe' =>'Piutang', 'status' => 'Belum Lunas']) }}" class="card-link">View ➔</a>
+                        <div class="card-icon">📦</div>
+                    </div>
+                    <div class="card">
                         <div class="card-number">{{$countReq}}</div>
                         <div class="card-title">Perizinan</div>
                         <a href="{{ route('level.index') }}" class="card-link">Atur Perizinan➔</a>
@@ -446,11 +452,11 @@
                     <canvas id="profitChart"></canvas>
                 </div>
                 <div class="chart-container" id="penjualanChartContainer" style="margin-top: 20px; padding-top:50px;">
-                    <h3>Grafik Pemasukan (12 Bulan Terakhir)</h3>
+                    <h3>Grafik Penjualan (12 Bulan Terakhir)</h3>
                     <canvas id="penjualanChart"></canvas>
                 </div>
                 <div class="chart-container" id="pembelianChartContainer" style="margin-top: 20px; padding-top:50px;">
-                <h3>Grafik Pengeluaran (12 Bulan Terakhir)</h3>
+                <h3>Grafik Pembelian (12 Bulan Terakhir)</h3>
                     <canvas id="pembelianChart"></canvas>
                 </div>
                 
@@ -481,7 +487,7 @@
         var penjualanChart = new Chart(ctxPenjualan, {
             type: 'line',
             data: {
-                labels: @json($penjualanMonths),
+                labels: @json($months),
                 datasets: [{
                     label: 'Penjualan',
                     data: @json($penjualanData),
@@ -541,7 +547,7 @@
         var pembelianChart = new Chart(ctxPembelian, {
             type: 'line',
             data: {
-                labels: @json($pembelianMonths),
+                labels: @json($months),
                 datasets: [{
                     label: 'Pembelian',
                     data: @json($pembelianData),
@@ -601,7 +607,7 @@
         var profitChart = new Chart(ctxProfit, {
             type: 'line',
             data: {
-                labels: @json($profitMonths),
+                labels: @json($months),
                 datasets: [{
                     label: 'Profit',
                     data: @json($profitData),
@@ -656,6 +662,7 @@
             }
         });
     });
+
     </script>
 
 </body>

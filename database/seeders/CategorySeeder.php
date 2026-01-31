@@ -2,16 +2,16 @@
 namespace Database\Seeders;
 
 use Illuminate\Database\Seeder;
-use App\Models\Category;
+use App\Models\User;
 
-class CategorySeeder extends Seeder
+class UserSeeder extends Seeder
 {
     public function run()
     {
-        Category::create([
+        User::create([
             'name' => 'Plastics',
             'description' => 'This is a sample description',
         ]);
     }
-}
+}   
 

@@ -58,6 +58,7 @@
             padding: 6px;
             border: 1px solid #000;
             text-align: left;
+            white-space: nowrap;
         }
         .details th {
             background-color: #f0f0f0;
@@ -100,15 +101,14 @@
             <div class="left-side">
                 <h1><strong>Wenny Plastik</strong></h1>
                 <p>Plastic Food Packaging Distributor</p> 
-                <p>Pergudangan Margomulyo Indah Blok 8 - 7 Surabaya</p>
-                <p>Phone / Fax: 021-54282034, 021-54282054</p>
-                <p>NPWP</p>
+                <p>Pergudangan Margomulyo Indah 17B Blok B no. 7</p>
+                <p>Phone : 087855340028</p>
             </div>
-            <div class="right-side">
-                <p><strong>Tanggal:</strong> {{ \Carbon\Carbon::now()->format('d-m-Y') }}</p>
-                <p><strong>Sales:</strong> {{ $penjualan->sales }}</p>
-                <p><strong>Customer:</strong> {{ $penjualan->customer->name }}</p>
-                <p><strong>Address:</strong> {{ $penjualan->customer->address }}</p>
+            <div class="right-side" style="font-size:15px; text-align:left;">
+                <p><strong>Tanggal:</strong>   {{ \Carbon\Carbon::now()->format('d-m-Y') }}</p>
+                <p><strong>Sales:</strong>     {{ $penjualan->sales }}</p>
+                <p><strong>Customer:</strong>  {{ $penjualan->customer->name }}</p>
+                <p><strong>Address:</strong>   {{ $penjualan->customer->address }}</p>
             </div>
         </div>
 
@@ -126,13 +126,13 @@
                 </tr>
                 @foreach($penjualan->rincianpenjualans as $index => $rincian)
                 <tr>
-                    <td>{{ $index + 1 }}</td>
+                    <td style="text-align:center;">{{ $index + 1 }}. </td>
                     <td>{{ $rincian->stock->kode }}</td>
                     <td>{{ $rincian->stock->name }}</td>
                     <td>{{ $rincian->quantity }}</td>
                     <td>CTN</td>
-                    <td>Rp {{ number_format($rincian->price, 2) }}</td>
-                    <td>Rp {{ number_format($rincian->total, 2) }}</td>
+                    <td>Rp. {{ number_format($rincian->price, 0, ',', '.') }}</td>
+                    <td>Rp. {{ number_format($rincian->total, 0, ',', '.') }}</td>
                 </tr>   
                 @endforeach
                 <tr>
@@ -140,30 +140,30 @@
                     <td>{{ $penjualan->rincianpenjualans->sum('quantity') }}</td>
                     <td>CTN</td>
                     <th>Total</th>
-                    <td>Rp {{ number_format($penjualan->total, 2) }}</td>
+                    <td>Rp. {{ number_format($penjualan->total, 0, ',', '.') }}</td>
                 </tr>
                 <tr>
                     <td colspan="5" rowspan="4" class="total-title">
-                        <p style="font-size:13px;">Tanggal Jatuh Tempo : <br>
+                        <p style="font-size:13px;">Tanggal Jatuh Tempo: {{ $penjualan->tenggat_waktu->format('d-m-Y') }}<br>
                         Keterangan : Pembayaran dapat Ditransfer ke <br>
-                        1. BCA a/c - Diatasnamakan <br>
-                        2. Untuk Bilyet Giro atau cek ke BCA a/c - diatasnamakan - <br>
+                        1. BCA a/c 8290727597 Diatasnamakan Agus Widodo Purbadi<br>
+                        2. Untuk Bilyet Giro atau cek ke BCA a/c 8290727597 Diatasnamakan Agus Widodo Purbadi<br>
                         3. Maksimal Retur Barang dan Komplain Harga 7 Hari Kerja terhitung dari <br> tanggal dikeluarkannya Invoice</p>
                     </td>
                     <th class="total-title">Diskon</th>
-                    <td>Rp {{ number_format(($penjualan->diskon / 100) * $penjualan->total, 2) }}</td>
+                    <td>Rp. {{ number_format(($penjualan->diskon / 100) * $penjualan->total, 0, ',', '.') }}</td>
                 </tr>
                 <tr>
                     <th class="total-title">DPP</th>
-                    <td>Rp {{ number_format($penjualan->dpp, 2) }}</td>
+                    <td>Rp. {{ number_format($penjualan->dpp, 0, ',', '.') }}</td>
                 </tr>
                 <tr>
                     <th class="total-title">PPN</th>
-                    <td>Rp {{ number_format($penjualan->ppn, 2) }}</td>
+                    <td>Rp. {{ number_format($penjualan->ppn, 0, ',', '.') }}</td>
                 </tr>
                 <tr>
                     <th class="total-title">Total Netto</th>
-                    <td><strong>Rp {{ number_format($penjualan->total_netto, 2) }}</strong></td>
+                    <td>Rp. {{ number_format($penjualan->total_netto, 0, ',', '.') }}</td>
                 </tr>
                 <tr>
                     <th colspan="2" class="total-title">Administrasi</th>

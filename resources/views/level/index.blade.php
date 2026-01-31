@@ -375,7 +375,7 @@
                                 <td data-label="Name">{{ $user->name }}</td>
                                 <td data-label="Email">{{ $user->email }}</td>
                                 @if (Auth::user()->level > 1)
-                                    <td data-label="Action">
+                                    <td data-label="Actions">
                                         <div class="action-icons">
                                             <a href="{{ route('level.edit', $user->id) }}" class="edit">
                                                 <i class="fas fa-edit"></i>
@@ -413,7 +413,7 @@
                                 <td data-label="Name">{{ $user->name }}</td>
                                 <td data-label="Email">{{ $user->email }}</td>
                                 @if (Auth::user()->level > 0)
-                                    <td data-label="Action">
+                                    <td data-label="Actions">
                                         <div class="action-icons">
                                             <a href="{{ route('level.edit', $user->id) }}" class="edit">
                                                 <i class="fas fa-edit"></i>

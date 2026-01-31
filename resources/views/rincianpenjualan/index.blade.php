@@ -317,7 +317,7 @@
                 <ul>
                     <li><a href="/dashboard">Dashboard</a></li>
                     <li><a href="/stocks">Stocks</a></li>
-                    <li><a href="/penjualan">Pembelian</a></li>
+                    <li><a href="/pembelian">Pembelian</a></li>
                     <li><a href="/penjualan" class="active">Penjualan</a></li>
                     <li><a href="/suppliers">Suppliers</a></li>
                     <li><a href="/customers">Customers</a></li>
@@ -340,13 +340,14 @@
             <section class="content">
                 <div class="category-header">
                     <h3>Rincian penjualan</h3>
-                    <a href="{{ route('rincianpenjualan.create', $penjualan->id) }}" class="btn btn-primary">Add Item</a>
+                    <a href="{{ route('rincianpenjualan.create', $penjualan->id) }}" class="btn btn-primary" id="addBtn">Add Item</a>
                 </div>
                 <h3>Diskon : Rp {{number_format(($penjualan->diskon / 100) * $penjualan->total, 2)}}</h3>
                 <table>
                     <thead>
                         <tr>
                             <th>Stock Name</th>
+                            <th>Gudang</th>
                             <th>Quantity</th>
                             <th>Price</th>
                             <th>Total</th>
@@ -355,12 +356,13 @@
                     </thead>
                     <tbody>
                     @foreach($rincianpenjualans as $rincian)
-                        <tr>
+                        <tr data-created-by="{{ $rincian->penjualan->user->id }}">
                             <td data-label="Name">{{ $rincian->stock->name }}</td>
+                            <td data-label="Gudang">{{ $rincian->gudang->name}}</td>
                             <td data-label="Quantity">{{ $rincian->quantity }}</td>
-                            <td data-label="Price">Rp. {{ $rincian->price }}</td>
-                            <td data-label="Total">Rp. {{ $rincian->total }}</td>
-                            <td data-label="Action">
+                            <td data-label="Price">Rp. {{ number_format($rincian->price, 0, ',', '.') }}</td>
+                            <td data-label="Total">Rp. {{ number_format($rincian->total, 0, ',', '.') }}</td>
+                            <td data-label="Actions">
                                 <div class = "action-icons">
                                     <a href="{{ route('rincianpenjualan.edit', $rincian->id) }}" class="edit">
                                         <i class="fas fa-edit"></i>
@@ -383,31 +385,55 @@
     </div>
     <script>
 
-function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const backdrop = document.getElementById('backdrop');
-            sidebar.classList.toggle('show');
-            backdrop.classList.toggle('show');
+let userLevel = {{ Auth::user()->level }}; // User's level (1 or 2)
+            let userId = {{ Auth::user()->id }}; // User's ID
+
+            function toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('backdrop');
+        sidebar.classList.toggle('show');
+        backdrop.classList.toggle('show');
+    }
+
+function confirmation(event) {
+    event.stopPropagation(); // Stop the event from propagating to the <tr> click event
+    event.preventDefault();   // Prevent the form from submitting immediately
+
+    swal({
+        title: "Are you sure you want to delete this record?",
+        text: "This action cannot be undone.",
+        icon: "warning",
+        buttons: true,
+        dangerMode: true,
+    })
+    .then((willDelete) => {
+        if (willDelete) {
+            // If the user confirms, submit the form
+            event.target.closest('form').submit();
         }
+    });
+}
 
-    function confirmation(event) {
-        event.stopPropagation(); // Stop the event from propagating to the <tr> click event
-        event.preventDefault();   // Prevent the form from submitting immediately
+document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('tbody tr').forEach(function (row) {
+            let createdBy = parseInt(row.getAttribute('data-created-by')); // User ID who created the record
+            let editButton = row.querySelector('.edit');
+            let deleteButton = row.querySelector('.delete');
 
-        swal({
-            title: "Are you sure you want to delete this record?",
-            text: "This action cannot be undone.",
-            icon: "warning",
-            buttons: true,
-            dangerMode: true,
-        })
-        .then((willDelete) => {
-            if (willDelete) {
-                // If the user confirms, submit the form
-                event.target.closest('form').submit();
+            if (userLevel === 1 && userId !== createdBy) {
+                // Hide edit and delete buttons for level 1 users who don't own the record
+                if (editButton) {
+                    editButton.style.display = 'none';
+                }
+                if (deleteButton) {
+                    deleteButton.style.display = 'none';
+                }
+                if (addBtn) {
+                    addBtn.style.display = 'none';
+                }
             }
         });
-    }
+    });
 </script>
 </body>
 </html>

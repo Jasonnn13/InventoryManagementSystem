@@ -6,6 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login</title>
     <style>
+        /* Your existing CSS styles */
         body {
             font-family: Arial, sans-serif;
             background-color: #1f1f1f;
@@ -100,12 +101,30 @@
             color: #4caf50;
             text-decoration: none;
         }
+
+        .error {
+            color: #f44336;
+            margin-bottom: 15px;
+            text-align: center;
+        }
     </style>
 </head>
 
 <body>
     <div class="login-container">
         <h2>Login</h2>
+        
+        <!-- Display Errors -->
+        @if ($errors->any())
+            <div class="error">
+                <ul>
+                    @foreach ($errors->all() as $error)
+                        <li>{{ $error }}</li>
+                    @endforeach
+                </ul>
+            </div>
+        @endif
+
         <form method="POST" action="{{ route('login') }}">
             @csrf
             <label for="email">Email</label>
@@ -117,8 +136,8 @@
                 <label for="remember_me">Remember me</label>
             </div>
             <div class="buttons">
-                <button type="submit" class="btn btn-primary">Log in</button>
                 <a href="{{ route('register') }}">Register</a>
+                <button type="submit" class="btn btn-primary">Log in</button>
             </div>
         </form>
         <div class="forgot-password">

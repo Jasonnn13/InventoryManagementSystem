@@ -13,6 +13,7 @@ return new class extends Migration
             $table->foreignId('suppliers_id')->constrained()->onDelete('cascade');
             $table->decimal('total', 19, 2)->default(0);
             $table->foreignId('users_id')->constrained()->onDelete('cascade');
+            $table->foreignId('gudangs_id')->constrained()->onDelete('cascade');
             $table->timestamps();
         });
     }

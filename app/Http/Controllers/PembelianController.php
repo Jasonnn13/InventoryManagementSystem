@@ -6,9 +6,11 @@ use App\Models\Pembelian;
 use App\Models\RincianPembelian;
 use App\Models\Stock;
 use App\Models\Supplier;
+use App\Models\Gudang;
+use App\Models\GudangStock;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Auth;  // Import Auth facade
-use Illuminate\Support\Facades\Log;  // Import the Log facade
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Log;
 
 class PembelianController extends Controller
 {
@@ -20,14 +22,14 @@ class PembelianController extends Controller
     
         $query = Pembelian::query()
             ->join('suppliers', 'pembelian.suppliers_id', '=', 'suppliers.id')
-            ->select('pembelian.*'); // Ensure only columns from pembelian are selected
+            ->select('pembelian.*');
     
         // Apply search filter
         if ($search) {
             $query->where('suppliers.name', 'like', "%{$search}%");
         }
     
-        // Apply month/year filter if provided
+        // Apply month/year filter
         if ($month && $year) {
             $query->whereYear('pembelian.created_at', $year)
                   ->whereMonth('pembelian.created_at', $month);
@@ -37,18 +39,16 @@ class PembelianController extends Controller
         $query->orderBy('pembelian.created_at', 'desc');
     
         // Get the results
-        $pembelian = $query->get();
+        $pembelians = $query->paginate(10);
     
-        return view('pembelian.index', compact('pembelian', 'search', 'month', 'year'));
+        return view('pembelian.index', compact('pembelians', 'search', 'month', 'year'));
     }
-    
-    
-
 
     public function create()
     {
         $suppliers = Supplier::all();
-        return view('pembelian.create', compact('suppliers'));
+        $gudangs = Gudang::all();
+        return view('pembelian.create', compact('suppliers', 'gudangs'));
     }
 
     public function store(Request $request)
@@ -56,88 +56,103 @@ class PembelianController extends Controller
         $validated = $request->validate([
             'suppliers_id' => 'required|exists:suppliers,id',
             'total' => 'required|numeric|min:0',
+            'gudangs_id' => 'required|exists:gudangs,id',
         ]);
 
-        $userId = Auth::id();  // Get the current user ID
+        $userId = Auth::id();
 
-        // Debugging: Log request data
         Log::info('Store Request Data:', $validated);
 
         $pembelian = Pembelian::create([
             'suppliers_id' => $validated['suppliers_id'],
-            'total' => $validated['total'], // Total will be updated later
-            'users_id' => $userId,  // Set user_id
+            'total' => $validated['total'],
+            'users_id' => $userId,
+            'gudangs_id' => $validated['gudangs_id'],
         ]);
 
-
-        // Redirect to create rincianpembelian page with the correct pembelian_id
+        // Redirect to rincian pembelian creation
         return redirect()->route('rincianpembelian.create', ['pembelian_id' => $pembelian->id]);
     }
-
 
     public function edit(Pembelian $pembelian)
     {
         $suppliers = Supplier::all();
-        return view('pembelian.edit', compact('pembelian', 'suppliers'));
+        $gudangs = Gudang::all();
+        return view('pembelian.edit', compact('pembelian', 'suppliers', 'gudangs'));
     }
 
     public function update(Request $request, Pembelian $pembelian)
     {
         $validated = $request->validate([
             'suppliers_id' => 'required|exists:suppliers,id',
+            'gudangs_id' => 'required|exists:gudangs,id',
             'total' => 'required|numeric|min:0',
-            // Add validation rules for other fields if necessary
         ]);
 
-        $userId = Auth::id(); // Get the current authenticated user's ID
-    
-        // Update the pembelian record
+        // Update pembelian
         $pembelian->update([
             'suppliers_id' => $validated['suppliers_id'],
-            'users_id' => $userId, // Update to the current authenticated user's ID
+            'gudangs_id' => $validated['gudangs_id'],
             'total' => $validated['total'],
         ]);
-    
+
+        // Update suppliers_id for related stock items
         $rincianPembelian = RincianPembelian::where('pembelian_id', $pembelian->id)->get();
 
         foreach ($rincianPembelian as $rincian) {
-            $stock = Stock::findOrFail($rincian->stocks_id);  // Use findOrFail
+            $stock = Stock::findOrFail($rincian->stocks_id);
             $stock->suppliers_id = $validated['suppliers_id'];
             $stock->save();
+
+            // Update GudangStock (ensure stock is linked to the correct gudang)
+            $gudangStock = GudangStock::where('stocks_id', $rincian->stocks_id)
+                                       ->where('gudangs_id', $validated['gudangs_id'])
+                                       ->first();
+            
+            if ($gudangStock) {
+                // If it exists, update it
+                $gudangStock->gudangs_id = $validated['gudangs_id'];
+                $gudangStock->save();
+            } else {
+                // If it doesn't exist, create a new record
+                GudangStock::create([
+                    'stocks_id' => $rincian->stocks_id,
+                    'gudangs_id' => $validated['gudangs_id'],
+                    'quantity' => $rincian->quantity,
+                ]);
+            }
         }
-    
+
         return redirect()->route('pembelian.index')
                          ->with('success', 'Pembelian updated successfully.');
     }
-    
 
     public function destroy(Pembelian $pembelian)
     {
-        // Get all rincian pembelian associated with the pembelian
         $rincianPembelians = RincianPembelian::where('pembelian_id', $pembelian->id)->get();
 
-        // Update the stocks table based on the items being deleted
         foreach ($rincianPembelians as $rincian) {
-            $rincianPembelian = RincianPembelian::findOrFail($rincian->id);
-            $stock = Stock::findOrFail($rincianPembelian->stocks_id);  // Use findOrFail
-            $pembelian = Pembelian::findOrFail($rincianPembelian->pembelian_id);  // Use findOrFail
+            $stock = Stock::findOrFail($rincian->stocks_id);
 
             // Update the stock quantity
-            $stock->stock -= $rincianPembelian->quantity;
+            $stock->stock -= $rincian->quantity;
             $stock->save();
 
-            // Delete the RincianPembelian record
-            $rincianPembelian->delete();
+            // Update GudangStock (remove stock from warehouse)
+            $gudangStock = GudangStock::where('stocks_id', $rincian->stocks_id)
+                                       ->where('gudangs_id', $pembelian->gudangs_id)
+                                       ->first();
 
-            // Update the total pembelian
-            $pembelian->total = $pembelian->rincianPembelians()->sum('total');  // Access relationship correctly
-            $pembelian->save();
+            if ($gudangStock) {
+                $gudangStock->quantity -= $rincian->quantity;
+                $gudangStock->save();
+            }
+
+            // Delete each rincian pembelian record
+            $rincian->delete();
         }
 
-        // Delete all rincian pembelian with the same pembelian id
-        RincianPembelian::where('pembelian_id', $pembelian->id)->delete();
-
-        // Delete the pembelian
+        // Delete the pembelian itself
         $pembelian->delete();
 
         return redirect()->route('pembelian.index')

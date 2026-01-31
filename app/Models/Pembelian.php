@@ -11,11 +11,16 @@ class Pembelian extends Model
 
     protected $table = 'pembelian';
 
-    protected $fillable = ['suppliers_id', 'total', "users_id"];
+    protected $fillable = ['gudangs_id', 'suppliers_id', 'total', "users_id"];
 
     public function supplier()
     {
         return $this->belongsTo(Supplier::class, 'suppliers_id');
+    }
+
+    public function gudang()
+    {
+        return $this->belongsTo(Gudang::class, 'gudangs_id');
     }
 
     // In Pembelian.php

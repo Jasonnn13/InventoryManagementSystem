@@ -256,6 +256,13 @@
                         </select>
                     </div>
                     <div class="form-group">
+                        <label for="tipe">Tipe</label>
+                        <select id="tipe" name="tipe" required>
+                            <option value="Cash">Cash</option>
+                            <option value="Piutang">Piutang</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="sales">Sales</label>
                         <input type="text" id="sales" name="sales" required>
                     </div>

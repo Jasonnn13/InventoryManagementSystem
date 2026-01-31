@@ -18,7 +18,7 @@ class SuppliersController extends Controller
                              ->orWhere('contact_information', 'like', "%{$search}%");
             })
             ->orderBy('created_at', 'desc') // Order by newest created_at
-            ->get();
+            ->paginate(10);
 
         return view('suppliers.index', compact('suppliers', 'search'));
     }

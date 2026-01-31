@@ -12,6 +12,7 @@ return new class extends Migration
             $table->id();
             $table->foreignId('customers_id')->constrained()->onDelete('cascade');
             $table->decimal('total', 19, 2)->default(0);
+            $table->string('tipe');
             $table->decimal('total_netto', 19, 2)->default(0);
             $table->integer('diskon')->default(0);
             $table->decimal('ppn', 19, 2)->default(0);

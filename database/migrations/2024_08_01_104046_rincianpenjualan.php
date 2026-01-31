@@ -15,6 +15,7 @@ return new class extends Migration
             $table->integer('quantity');
             $table->decimal('price', 19, 2)->default(0);
             $table->decimal('total', 19, 2)->default(0);
+            $table->foreignId('gudangs_id')->constrained()->onDelete('cascade');
             $table->timestamps(); // Adds created_at and updated_at columns
         });
     }

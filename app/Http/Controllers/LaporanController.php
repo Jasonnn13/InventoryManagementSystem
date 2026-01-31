@@ -16,10 +16,10 @@ class LaporanController extends Controller
         $currentMonth = Carbon::now()->month;
 
         // Data for the current month
-
         $penjualanTotalCurrentMonth = Penjualan::whereMonth('created_at', $currentMonth)
                                     ->whereYear('created_at', $currentYear)
-                                    ->sum('total');
+                                    ->where('status', 'Lunas')
+                                    ->sum('total_netto');
 
         $pembelianTotalCurrentMonth = Pembelian::whereMonth('created_at', $currentMonth)
                                     ->whereYear('created_at', $currentYear)
@@ -29,8 +29,8 @@ class LaporanController extends Controller
 
         // Check if a row for the current month exists in the 'laporan' table
         $laporan = Laporan::whereMonth('created_at', $currentMonth)
-                            ->whereYear('created_at', $currentYear)
-                            ->first();
+                          ->whereYear('created_at', $currentYear)
+                          ->first();
 
         if ($laporan) {
             // Update the existing row
@@ -50,42 +50,60 @@ class LaporanController extends Controller
             ]);
         }
 
-        $laporans = Laporan::all();
-        $laporans = Laporan::orderBy('tahun', 'desc')->orderBy('bulan', 'desc')->get();
-
+        // Initialize arrays for data collection
         $months = [];   
         $penjualanData = [];
         $pembelianData = [];
         $profitData = [];
-        $penjualanMonths = [];
-        $pembelianMonths = [];
-        $profitMonths = [];
 
+        // Loop through the past 12 months (including the current month)
         for ($i = 11; $i >= 0; $i--) {
             $date = Carbon::now()->subMonths($i);
-            $months[] = $date->format('M Y');
-            $penjualanMonths[] = $date->format('M Y'); // To be used for Penjualan chart
-            $pembelianMonths[] = $date->format('M Y'); // To be used for Pembelian chart
-            $profitMonths[] = $date->format('M Y'); // To be used for Profit chart
+            $months[] = $date->format('M Y'); // Add formatted month-year to the list for the chart labels
 
+            // Retrieve existing Laporan for the specific month and year
+            $laporan = Laporan::where('bulan', $date->month)
+                              ->where('tahun', $date->year)
+                              ->first();
+            
+            // Calculate totals for the specific month
             $penjualanTotal = Penjualan::whereMonth('created_at', $date->month)
                                         ->whereYear('created_at', $date->year)
-                                        ->sum('total'); // Assuming 'total' field in ekonomi
+                                        ->where('status', 'Lunas') // Ensure consistency by filtering 'Lunas' status
+                                        ->sum('total_netto');
 
             $pembelianTotal = Pembelian::whereMonth('created_at', $date->month)
                                         ->whereYear('created_at', $date->year)
-                                        ->sum('total'); // Assuming 'total' field in ekonomi
+                                        ->sum('total');
                 
             $profit = $penjualanTotal - $pembelianTotal;
 
+            // Update or create Laporan record for the specific month
+            if($laporan) {
+                $laporan->update([
+                    'pemasukan' => $penjualanTotal,
+                    'pengeluaran' => $pembelianTotal,
+                    'profit' => $profit,
+                ]);
+            } else {
+                Laporan::create([
+                    'pemasukan' => $penjualanTotal,
+                    'pengeluaran' => $pembelianTotal,
+                    'profit' => $profit,
+                    'bulan' => $date->month,
+                    'tahun' => $date->year,
+                ]);
+            }
+
+            // Store the data for the charts
             $penjualanData[] = $penjualanTotal;
             $pembelianData[] = $pembelianTotal;
             $profitData[] = $profit;
         }
 
+        // Fetch all laporan records ordered by year and month for display
+        $laporans = Laporan::orderBy('tahun', 'desc')->orderBy('bulan', 'desc')->get();
 
-        return view('laporan.profit', compact('laporans', 'months', 'penjualanData', 'pembelianData', 'profitData', 'penjualanMonths', 'pembelianMonths', 'profitMonths'));
+        return view('laporan.profit', compact('laporans', 'months', 'penjualanData', 'pembelianData', 'profitData'));
     }
-
-    
 }

@@ -362,6 +362,14 @@
                         <input type="text" id="stock-input-${existingItemsAdded}" name="items[${existingItemsAdded}][name]" class="form-control" placeholder="Enter item name" required>
                     </div>
                     <div class="form-group">
+                        <label for="gudangs_id">Gudang</label>
+                        <select id="gudangs_id" name="gudangs_id" required>
+                            @foreach($gudangs as $gudang)
+                                <option value="{{ $gudang->id }}">{{ $gudang->name }}</option>
+                            @endforeach
+                        </select>
+                    </div>
+                    <div class="form-group">
                         <label for="quantity-${existingItemsAdded}">Quantity</label>
                         <input type="number" id="quantity-${existingItemsAdded}" name="items[${existingItemsAdded}][quantity]" min="1" required>
                     </div>

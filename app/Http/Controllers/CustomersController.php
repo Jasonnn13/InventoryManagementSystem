@@ -18,7 +18,7 @@ class CustomersController extends Controller
                              ->orWhere('contact_information', 'like', "%{$search}%");
             })
             ->orderBy('created_at', 'desc') // Order by newest created_at
-            ->get();
+            ->paginate(10);
 
         return view('customers.index', compact('customers', 'search'));
     }

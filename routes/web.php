@@ -12,6 +12,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\PdfgenerateController;
 use App\Http\Controllers\LaporanController;
 use App\Http\Controllers\LevelController;
+use App\Http\Controllers\GudangsController;
+
 
 // Route accessible to everyone
 Route::get('/', function () {
@@ -22,8 +24,15 @@ Route::get('/', function () {
 });
 
 Route::get('/wait', function () {
+    if (Auth::user()->level >= 1) {
+        return redirect()->route('dashboard');
+    }
     return view('wait');
 })->name('wait');
+
+Route::get('/overdue', function () {
+    return view('overdue');
+})->name('overdue');
 
 
 // Routes that require authentication and email verification
@@ -48,6 +57,7 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::resource('suppliers', SuppliersController::class);
     Route::resource('pembelian', PembelianController::class);
     Route::resource('penjualan', PenjualanController::class);
+    Route::resource('gudangs', GudangsController::class);
     
     Route::get('/stocks', [StockController::class, 'index'])->name('stocks.index');
     Route::get('/stocks/create', [StockController::class, 'create'])->name('stocks.create');
@@ -61,10 +71,9 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     // Additional routes that require authentication and verification
     Route::get('/laporan/profit', [LaporanController::class, 'profit'])->name('laporan.profit');
     Route::get('/rincianpenjualan/{penjualan_id}/invoice', [PdfgenerateController::class, 'generatePDF'])->name('rincianpenjualan.invoice');
+    Route::get('/rincianpenjualan/{penjualan_id}/suratjalan', [PdfgenerateController::class, 'generatePDF2'])->name('rincianpenjualan.suratjalan');
     
     Route::resource('level', LevelController::class);
-
-    
     
 });
 

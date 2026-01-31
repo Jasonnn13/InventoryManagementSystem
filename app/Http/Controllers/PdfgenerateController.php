@@ -22,4 +22,19 @@ class PdfgenerateController extends Controller
         // return view('rincianpenjualan.invoice', compact('penjualan'));
     }
 
+    public function generatePDF2($penjualan_id)
+    {
+        // Retrieve only necessary data
+        $penjualan = Penjualan::with('customer', 'rincianpenjualans.stock')->findOrFail($penjualan_id);
+
+        // Share data to view
+        $pdf = PDF::loadView('rincianpenjualan.suratjalan', ['penjualan' => $penjualan]);
+
+        // // Download PDF file
+        // return $pdf->download('Surat_Jalan_'.$penjualan_id.'.pdf');
+
+        return view('rincianpenjualan.suratjalan', compact('penjualan'));
+    }
+
+
 }

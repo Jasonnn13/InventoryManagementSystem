@@ -16,6 +16,12 @@ class Stock extends Model
         return $this->belongsTo(Supplier::class, 'suppliers_id');
     }
 
+    public function gudangs()
+    {
+        return $this->belongsToMany(Gudang::class, 'quantity', 'stocks_id', 'gudangs_id');
+    }
+    
+
     public function rincianPembelian()
     {
         return $this->hasMany(RincianPembelian::class, 'stocks_id');

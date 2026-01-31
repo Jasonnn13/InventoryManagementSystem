@@ -239,40 +239,40 @@
                 </form>
             </header>
             <section class="content">
-                <form action="{{ route('stocks.update', $stocks->id) }}" method="POST">
+                <form action="{{ route('stocks.update', $stock->id) }}" method="POST">
                     @csrf
                     @method('PUT')
                     <div class="form-group">
                         <label for="name">Name</label>
-                        <input type="text" id="name" name="name" value="{{ old('name', $stocks->name) }}" required>
+                        <input type="text" id="name" name="name" value="{{ old('name', $stock->stock->name) }}" required>
                         @error('name')
                             <div class="error" style="color: #f44336;">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="form-group">
                         <label for="kode">Kode</label>
-                        <input type="text" id="kode" name="kode" value="{{ old('kode', $stocks->kode) }}" required>
+                        <input type="text" id="kode" name="kode" value="{{ old('kode', $stock->stock->kode) }}" required>
                         @error('kode')
                             <div class="error" style="color: #f44336;">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="form-group">
                         <label for="stock">Stocks</label>
-                        <input type="number" id="stock" name="stock" value="{{ old('stock', $stocks->stock) }}" required>
+                        <input type="number" id="stock" name="stock" value="{{ old('stock', $stock->quantity) }}" required>
                         @error('stock')
                             <div class="error" style="color: #f44336;">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="form-group">
                         <label for="beli">Harga Beli</label>
-                        <input type="number" id="beli" name="beli" step="0.01" min="0" value="{{ old('beli', $stocks->beli) }}" required>
+                        <input type="number" id="beli" name="beli" step="0.01" min="0" value="{{ old('beli', $stock->stock->beli) }}" required>
                         @error('beli')
                             <div class="error" style="color: #f44336;">{{ $message }}</div>
                         @enderror
                     </div>
                     <div class="form-group">
                         <label for="jual">Harga Jual</label>
-                        <input type="number" id="jual" name="jual" step="0.01" min="0" value="{{ old('jual', $stocks->jual) }}" required>
+                        <input type="number" id="jual" name="jual" step="0.01" min="0" value="{{ old('jual', $stock->stock->jual) }}" required>
                         @error('jual')
                             <div class="error" style="color: #f44336;">{{ $message }}</div>
                         @enderror

@@ -7,6 +7,8 @@ use App\Models\RincianPenjualan;
 use App\Models\Stock;
 use App\Models\Supplier;
 use App\Models\Customer;
+use App\Models\Gudang;
+use App\Models\GudangStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +20,7 @@ class PenjualanController extends Controller
         $search = $request->input('search');
         $month = $request->input('month');
         $year = $request->input('year');
+        $status = $request->input('status');
     
         $query = Penjualan::query()
             ->join('customers', 'penjualan.customers_id', '=', 'customers.id')
@@ -34,13 +37,17 @@ class PenjualanController extends Controller
                   ->whereMonth('penjualan.created_at', $month);
         }
 
+        if($status){
+            $query->where('penjualan.status', $status);
+        }
+
         $query->orderBy('penjualan.created_at', 'desc');
     
         // Get the results
-        $penjualan = $query->get();
+        $penjualans = $query->paginate(10);
 
     
-        return view('penjualan.index', compact('penjualan', 'search', 'month', 'year'));
+        return view('penjualan.index', compact('penjualans', 'search', 'month', 'year', 'status'));
     }
     
     
@@ -57,6 +64,7 @@ class PenjualanController extends Controller
         $validated = $request->validate([
             'customers_id' => 'required|exists:customers,id',
             'status' => 'required|string',
+            'tipe' => 'required|string',
             'sales' => 'required|string',
             'tenggat_waktu' => 'required|date',
             'diskon' => 'nullable|integer|between:0,100', // Allow nullable values if not provided
@@ -71,14 +79,17 @@ class PenjualanController extends Controller
             'customers_id' => $validated['customers_id'],
             'total' => 0, // Total will be updated later
             'status' => $validated['status'],
+            'tipe' => $validated['tipe'],
             'sales' => $validated['sales'],
             'tenggat_waktu' => $validated['tenggat_waktu'],
             'users_id' => $userId, // Ensure this is set
             'ppn' => 0, // PPN will be updated later
             'dpp' => 0, // dpp will be updated later
-            'total_netto' => 0, // Total netto will be updated later
-            'diskon' => $validated['diskon'], // Assign the validated diskon value
+            'total_netto' => 0, 
+            'diskon' => $validated['diskon'], 
         ]);
+
+        
         
 
 
@@ -100,25 +111,29 @@ class PenjualanController extends Controller
         $validated = $request->validate([
             'customers_id' => 'required|exists:customers,id',
             'status' => 'required|string',
+            'tipe' => 'required|string',
             'sales' => 'required|string',
             'tenggat_waktu' => 'required|date',
             'diskon' => 'nullable|integer|between:0,100', // Allow nullable values if not provided
         ]);
-    
-        $userId = Auth::id(); // Ensure you get the authenticated user ID
+
     
         $penjualan->update([
             'customers_id' => $validated['customers_id'],
-            'total' => 0, // Total will be updated later
             'status' => $validated['status'],
+            'tipe' => $validated['tipe'],
             'sales' => $validated['sales'],
             'tenggat_waktu' => $validated['tenggat_waktu'],
-            'users_id' => $userId, // Ensure this is set
-            'ppn' => 0, // PPN will be updated later
-            'dpp' => 0, // dpp will be updated later
-            'total_netto' => 0, // Total netto will be updated later
             'diskon' => $validated['diskon'], // Assign the validated diskon value
         ]);
+
+        $penjualan = Penjualan::find($penjualan->id);
+        $penjualan->total_netto = $penjualan->total - (($penjualan->diskon/100) * $penjualan->total);
+        $dpp = $penjualan->total_netto / 1.11;
+        $ppn = $penjualan->total_netto - $dpp;
+        $penjualan->dpp = $dpp;
+        $penjualan->ppn = $ppn;
+        $penjualan->save();
 
     
         return redirect()->route('penjualan.index')
@@ -131,13 +146,24 @@ class PenjualanController extends Controller
         // Get all rincian penjualan associated with the penjualan
         $rincianpenjualans = RincianPenjualan::where('penjualan_id', $penjualan->id)->get();
         
-        // Update the stocks table based on the items being deleted
+        // Update the stocks and gudang_stock tables based on the items being deleted
         foreach ($rincianpenjualans as $rincian) {
             // Find the stock by the ID from rincian penjualan
             $stock = Stock::find($rincian->stocks_id);
+            
             if ($stock) {
-                // Increase the stock quantity by the quantity of the item in rincian penjualan
-                $stock->stock += $rincian->quantity;
+                // Update the GudangStock quantity first
+                $gudangStock = GudangStock::where('stocks_id', $rincian->stocks_id)
+                                          ->where('gudangs_id', $rincian->gudangs_id)  // Use rincian's gudangs_id
+                                          ->first();
+                
+                if ($gudangStock) {
+                    $gudangStock->increment('quantity', $rincian->quantity);  // Increment the quantity in the warehouse
+                    $gudangStock->save();
+                }
+    
+                // Update the overall stock table
+                $stock->stock = GudangStock::where('stocks_id', $rincian->stocks_id)->sum('quantity');
                 $stock->save();
             }
         }
@@ -150,7 +176,8 @@ class PenjualanController extends Controller
     
         return redirect()->route('penjualan.index')
                         ->with('success', 'Penjualan and associated rincian penjualan deleted successfully.');
-    }    
+    }
+        
 
 
 

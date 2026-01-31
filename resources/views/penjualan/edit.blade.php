@@ -245,7 +245,7 @@
                         <label for="customers_id">Customer</label>
                         <select id="customers_id" name="customers_id" required>
                             @foreach($customers as $customer)
-                                <option value="{{ $customer->id }}" {{ $penjualan->customers_id == $customer->id ? 'selected' : '' }}>
+                                <option value="{{ $customer->id }}" {{ old('customers_id', $penjualan->customers_id) == $customer->id ? 'selected' : '' }}>
                                     {{ $customer->name }}
                                 </option>
                             @endforeach
@@ -254,13 +254,30 @@
                     <div class="form-group">
                         <label for="status">Status</label>
                         <select id="status" name="status" required>
-                            <option value="Lunas" {{ $penjualan->status == 'Lunas' ? 'selected' : '' }}>Lunas</option>
-                            <option value="Belum_Lunas" {{ $penjualan->status == 'Belum_Lunas' ? 'selected' : '' }}>Belum Lunas</option>
+                            <option value="Lunas" {{ old('status', $penjualan->status) == 'Lunas' ? 'selected' : '' }}>Lunas</option>
+                            <option value="Belum Lunas" {{ old('status', $penjualan->status) == 'Belum Lunas' ? 'selected' : '' }}>Belum Lunas</option>
                         </select>
                     </div>
                     <div class="form-group">
+                        <label for="tipe">Tipe</label>
+                        <select id="tipe" name="tipe" required>
+                            <option value="Cash" {{ old('tipe', $penjualan->tipe) == 'Cash' ? 'selected' : '' }}>Cash</option>
+                            <option value="Piutang" {{ old('tipe', $penjualan->tipe) == 'Piutang' ? 'selected' : '' }}>Piutang</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label for="sales">Sales</label>
+                        <input value="{{ old('sales', $penjualan->sales) }}" type="text" id="sales" name="sales" required>
+                    </div>
+                    <div class="form-group">
                         <label for="tenggat_waktu">Tenggat</label>
-                        <input type="date" id="tenggat_waktu" name="tenggat_waktu" value="{{ $penjualan->tenggat_waktu }}" required>
+                        <input type="date" id="tenggat_waktu" name="tenggat_waktu" 
+                            value="{{ \Carbon\Carbon::parse(old('tenggat_waktu', $penjualan->tenggat_waktu))->format('Y-m-d') }}" 
+                            required>
+                    </div>
+                    <div class="form-group">
+                        <label for="diskon">Diskon (%)</label>
+                        <input type="number" id="diskon" name="diskon" min="0" max="100" value="{{ old('diskon', $penjualan->diskon) }}" required>
                     </div>
                     <div class="form-actions">
                         <button type="submit" class="btn btn-primary">Save Changes</button>

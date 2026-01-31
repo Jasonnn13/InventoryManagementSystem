@@ -196,6 +196,37 @@
         .overdue:hover {
             background-color: #cc0000; /* Darker red on hover for overdue */
         }
+        .dropdown {
+            position: relative;
+            display: inline-block;
+        }
+
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #4caf50; /* Match button style */
+            min-width: 160px;
+            box-shadow: 0px 8px 16px rgba(0, 0, 0, 0.2);
+            z-index: 1;
+        }
+
+        .dropdown-content a {
+            color: white;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+            border-bottom: 1px solid #5a5a5a;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #3a3a3a;
+        }
+
+        .dropdown:hover .dropdown-content {
+            display: block;
+        }
+
+        
     @media (max-width: 480px) {
         .hamburger {
             display: block; /* Show hamburger on small screens */
@@ -307,6 +338,40 @@
             display: block;
             margin-bottom: 5px; /* Space between label and data */
         }
+        .dropdown-content {
+            display: none;
+            position: absolute;
+            background-color: #f9f9f9;
+            min-width: 160px;
+            box-shadow: 0px 8px 16px 0px rgba(0,0,0,0.2);
+            z-index: 1;
+        }
+
+        .dropdown .download:focus + .dropdown-content {
+            display: block;
+        }
+
+        .dropdown-content a {
+            color: black;
+            padding: 12px 16px;
+            text-decoration: none;
+            display: block;
+        }
+
+        .dropdown-content a:hover {
+            background-color: #f1f1f1;
+        }
+
+        .action-icons {
+            display: flex;
+            align-items: center;
+        }
+
+        .dropdown .download:focus {
+            outline: none;
+        }
+
+
     }
     </style>
 </head>
@@ -352,30 +417,38 @@
                     <thead>
                         <tr>
                             <th>Customer</th>
-                            <th>Total</th>
+                            <th>Total Netto</th>
                             <th>Status</th>
+                            <th>Tipe</th>
                             <th>Sales</th>
                             <th>Tenggat</th>
-                            <th>Modified By</th>
+                            <th>Created By</th>
                             <th>Created At</th>
                             <th>Actions</th>
                         </tr>
                     </thead>
                     <tbody>
-                        @foreach($penjualan as $penjualan)
-                            <tr class="{{ $penjualan->status == 'Belum Lunas' && \Carbon\Carbon::now()->gt($penjualan->tenggat_waktu) ? 'overdue' : '' }}" onclick="window.location='{{ route('rincianpenjualan.index', ['penjualan_id' => $penjualan->id]) }}'">
+                        @foreach($penjualans as $penjualan)
+                            <tr data-created-by="{{ $penjualan->user->id }}" class="{{ $penjualan->status == 'Belum Lunas' && \Carbon\Carbon::now()->gt($penjualan->tenggat_waktu) ? 'overdue' : '' }}" onclick="window.location='{{ route('rincianpenjualan.index', ['penjualan_id' => $penjualan->id]) }}'">
                                 <td data-label="Name">{{ $penjualan->customer->name }}</td>
-                                <td data-label="Total Netto">Rp. {{ $penjualan->total_netto }}</td>
+                                <td data-label="Total Netto">Rp. {{ number_format($penjualan->total_netto, 0, ',', '.') }}</td>
                                 <td data-label="Status">{{ $penjualan->status }}</td>
+                                <td data-label="Tipe">{{ $penjualan->tipe }}</td>
                                 <td data-label="Sales">{{ $penjualan->sales }}</td>
-                                <td data-label="Tenggat">{{ $penjualan->tenggat_waktu }}</td>
-                                <td data-label="Modified By">{{ $penjualan->user->name }}</td>
-                                <td data-label="Created At">{{ $penjualan->created_at->format('Y-m-d') }}</td>
-                                <td data-label="Action">
+                                <td data-label="Tenggat">{{ $penjualan->tenggat_waktu->format('d-m-Y') }}</td>
+                                <td data-label="Created By">{{ $penjualan->user->name }}</td>
+                                <td data-label="Created At">{{ $penjualan->created_at->format('d-m-Y') }}</td>
+                                <td data-label="Actions">
                                     <div class="action-icons">
-                                        <a href="{{ route('rincianpenjualan.invoice', $penjualan->id) }}" class="download">
-                                            <i class="fas fa-download"></i>
-                                        </a>
+                                        <div class="dropdown">
+                                            <a href="javascript:void(0);" class="download" onclick="toggleDropdown(event, this)" tabindex="0">  
+                                                <i class="fas fa-download download-icon"></i>
+                                            </a>
+                                            <div class="dropdown-content">
+                                                <a href="{{ route('rincianpenjualan.invoice', $penjualan->id) }}">Download Invoice</a>
+                                                <a href="{{ route('rincianpenjualan.suratjalan', $penjualan->id) }}">Download Surat Jalan</a>
+                                            </div>
+                                        </div>
                                         <a href="{{ route('penjualan.edit', $penjualan->id) }}" class="edit">
                                             <i class="fas fa-edit"></i>
                                         </a>
@@ -383,8 +456,8 @@
                                             @csrf
                                             @method('DELETE')
                                             <button type="submit" class="delete" style="background: none; border: none; cursor: pointer;" onclick="confirmation(event)">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                                <i class="fas fa-trash-alt"></i>
+                                            </button>
                                         </form>
                                     </div>
                                 </td>
@@ -392,10 +465,67 @@
                         @endforeach
                     </tbody>
                 </table>
+                <div class="pagination">
+    @if ($penjualans->hasPages())
+        <ul style="display: flex; list-style-type: none; padding: 0; margin: 0;">
+            {{-- Previous Page Link --}}
+            @if ($penjualans->onFirstPage())
+                <li style="display: inline-block; margin: 0 15px; color: #888; cursor: not-allowed;"><span>&laquo;</span></li>
+            @else
+                <li style="display: inline-block; margin: 0 15px;">
+                    <a href="{{ $penjualans->previousPageUrl() }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">&laquo;</a>
+                </li>
+            @endif
+
+            {{-- Pagination Elements --}}
+            @foreach ($penjualans->appends(['search' => $search])->links()->elements[0] as $page => $url)
+                @if ($page == $penjualans->currentPage())
+                    <li style="display: inline-block; margin: 0 15px; font-weight: bold; color: azure;">
+                        <span>{{ $page }}</span>
+                    </li>
+                @else
+                    <li style="display: inline-block; margin: 0 15px;">
+                        <a href="{{ $url }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">{{ $page }}</a>
+                    </li>
+                @endif
+            @endforeach
+
+            {{-- Next Page Link --}}
+            @if ($penjualans->hasMorePages())
+                <li style="display: inline-block; margin: 0 15px;">
+                    <a href="{{ $penjualans->nextPageUrl() }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">&raquo;</a>
+                </li>
+            @else
+                <li style="display: inline-block; margin: 0 15px; color: #888; cursor: not-allowed;"><span>&raquo;</span></li>
+            @endif
+        </ul>
+    @endif
+</div>
             </section>
         </main>
     </div>
     <script>
+
+        // Ensure event propagation is stopped for dropdown interaction
+function toggleDropdown(event, element) {
+    event.stopPropagation(); // Prevent the tr click event
+    element.focus(); // Ensure focus to open dropdown
+}
+
+// Close dropdown if clicked outside
+window.onclick = function(event) {
+    if (!event.target.matches('.download-icon')) {
+        const dropdowns = document.getElementsByClassName("dropdown-content");
+        for (let i = 0; i < dropdowns.length; i++) {
+            let openDropdown = dropdowns[i];
+            openDropdown.style.display = "none";
+        }
+    }
+}
+
+        let userLevel = {{ Auth::user()->level }}; // User's level (1 or 2)
+        let userId = {{ Auth::user()->id }}; // User's ID
+
                 function toggleSidebar() {
             const sidebar = document.querySelector('.sidebar');
             const backdrop = document.getElementById('backdrop');
@@ -420,6 +550,26 @@
             }
         });
     }
+
+        // Disable edit/delete buttons based on user level and ownership
+        document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('tbody tr').forEach(function (row) {
+            let createdBy = parseInt(row.getAttribute('data-created-by')); // User ID who created the record
+            let editButton = row.querySelector('.edit');
+            let deleteButton = row.querySelector('.delete');
+
+            // Check if the user is level 1 and doesn't own this record
+            if (userLevel === 1 && userId !== createdBy) {
+                // Hide edit and delete buttons for level 1 users who don't own the record
+                if (editButton) {
+                    editButton.style.display = 'none';
+                }
+                if (deleteButton) {
+                    deleteButton.style.display = 'none';
+                }
+            }
+        });
+    });
 </script>
 </body>
 </html>

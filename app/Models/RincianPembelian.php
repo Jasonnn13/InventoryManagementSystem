@@ -18,6 +18,11 @@ class RincianPembelian extends Model
         return $this->belongsTo(Stock::class, 'stocks_id');
     }
 
+    public function gudang()
+    {
+        return $this->belongsTo(Gudang::class, 'gudangs_id');
+    }
+
     public function pembelian()
     {
         return $this->belongsTo(Pembelian::class, 'pembelian_id');

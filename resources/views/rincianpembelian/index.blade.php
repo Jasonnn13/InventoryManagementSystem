@@ -340,7 +340,7 @@
             <section class="content">
                 <div class="category-header">
                     <h3>Rincian Pembelian</h3>
-                    <a href="{{ route('rincianpembelian.create', $pembelian->id) }}" class="btn btn-primary">Add Item</a>
+                    <a href="{{ route('rincianpembelian.create', $pembelian->id) }}" class="btn btn-primary" id="addBtn">Add Item</a>
                 </div>
                 <table>
                     <thead>
@@ -354,12 +354,12 @@
                     </thead>
                     <tbody>
                     @foreach($rincianpembelians as $rincian)
-                        <tr>
+                        <tr data-created-by="{{ $rincian->pembelian->user->id }}">
                             <td data-label="Name">{{ $rincian->stock->name }}</td>
                             <td data-label="Quantity">{{ $rincian->quantity }}</td>
-                            <td data-label="Price">Rp. {{ $rincian->price }}</td>
-                            <td data-label="Total">Rp. {{ $rincian->total }}</td>
-                            <td data-label="Action">
+                            <td data-label="Price">Rp. {{ number_format($rincian->price, 0, ',', '.') }}</td>
+                            <td data-label="Total">Rp. {{ number_format($rincian->total, 0, ',', '.') }}</td>
+                            <td data-label="Actions">
                                 <div class="action-icons">
                                     <a href="{{ route('rincianpembelian.edit', $rincian->id) }}" class="edit">
                                         <i class="fas fa-edit"></i>
@@ -382,12 +382,15 @@
         </main>
     </div>
     <script>
-                function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const backdrop = document.getElementById('backdrop');
-            sidebar.classList.toggle('show');
-            backdrop.classList.toggle('show');
-        }
+            let userLevel = {{ Auth::user()->level }}; // User's level (1 or 2)
+            let userId = {{ Auth::user()->id }}; // User's ID
+
+            function toggleSidebar() {
+        const sidebar = document.querySelector('.sidebar');
+        const backdrop = document.getElementById('backdrop');
+        sidebar.classList.toggle('show');
+        backdrop.classList.toggle('show');
+    }
 
 function confirmation(event) {
     event.stopPropagation(); // Stop the event from propagating to the <tr> click event
@@ -407,6 +410,28 @@ function confirmation(event) {
         }
     });
 }
+
+document.addEventListener('DOMContentLoaded', function () {
+        document.querySelectorAll('tbody tr').forEach(function (row) {
+            let createdBy = parseInt(row.getAttribute('data-created-by')); // User ID who created the record
+            let editButton = row.querySelector('.edit');
+            let deleteButton = row.querySelector('.delete');
+
+            // Check if the user is level 1 and doesn't own this record
+            if (userLevel === 1 && userId !== createdBy) {
+                // Hide edit and delete buttons for level 1 users who don't own the record
+                if (editButton) {
+                    editButton.style.display = 'none';
+                }
+                if (deleteButton) {
+                    deleteButton.style.display = 'none';
+                }
+                if (addBtn) {
+                    addBtn.style.display = 'none';
+                }
+            }
+        });
+    });
 </script>
 </body>
 </html>

@@ -363,12 +363,12 @@
                             <th>Actions</th>
                         </tr>
                     </thead>
-                    <tbody>
+                    <tbody> 
                         @foreach($suppliers as $supplier)
-                        <tr onclick="window.location='{{ route('pembelian.index', ['search' => $supplier->name]) }}'">
+                        <tr onclick="window.location='{{ route('stocks.index', ['search' => $supplier->name]) }}'">
                             <td data-label="Name">{{ $supplier->name }}</td>
                             <td data-label="Contact">{{ $supplier->contact_information }}</td>
-                            <td data-label="Action">
+                            <td data-label="Actions">
                                 <div class="action-icons">
                                     <a href="{{ route('suppliers.edit', $supplier->id) }}" class="edit">
                                     <i class="fas fa-edit"></i>
@@ -386,6 +386,43 @@
                         @endforeach
                     </tbody>
                 </table>
+
+                <div class="pagination">
+    @if ($suppliers->hasPages())
+        <ul style="display: flex; list-style-type: none; padding: 0; margin: 0;">
+            {{-- Previous Page Link --}}
+            @if ($suppliers->onFirstPage())
+                <li style="display: inline-block; margin: 0 15px; color: #888; cursor: not-allowed;"><span>&laquo;</span></li>
+            @else
+                <li style="display: inline-block; margin: 0 15px;">
+                    <a href="{{ $suppliers->previousPageUrl() }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">&laquo;</a>
+                </li>
+            @endif
+
+            {{-- Pagination Elements --}}
+            @foreach ($suppliers->appends(['search' => $search])->links()->elements[0] as $page => $url)
+                @if ($page == $suppliers->currentPage())
+                    <li style="display: inline-block; margin: 0 15px; font-weight: bold; color: azure;">
+                        <span>{{ $page }}</span>
+                    </li>
+                @else
+                    <li style="display: inline-block; margin: 0 15px;">
+                        <a href="{{ $url }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">{{ $page }}</a>
+                    </li>
+                @endif
+            @endforeach
+
+            {{-- Next Page Link --}}
+            @if ($suppliers->hasMorePages())
+                <li style="display: inline-block; margin: 0 15px;">
+                    <a href="{{ $suppliers->nextPageUrl() }}" style="color: white; text-decoration: none; font-size: 18px; transition: color 0.3s ease;">&raquo;</a>
+                </li>
+            @else
+                <li style="display: inline-block; margin: 0 15px; color: #888; cursor: not-allowed;"><span>&raquo;</span></li>
+            @endif
+        </ul>
+    @endif
+</div>
             </section>
         </main>
     </div>

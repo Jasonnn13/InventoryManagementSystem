@@ -11,17 +11,26 @@ class Penjualan extends Model
 
     protected $table = 'penjualan';
 
-    protected $fillable = ['customers_id', 'total', 'users_id', 'status', 'tenggat_waktu', 'sales', 'diskon', 'ppn', 'total_netto', 'dpp'];
+    protected $fillable = ['gudangs_id', 'customers_id', 'total', 'users_id', 'status', 'tenggat_waktu', 'sales', 'diskon', 'ppn', 'total_netto', 'dpp', 'tipe'];
 
     public function customer()
     {
         return $this->belongsTo(Customer::class, 'customers_id');
     }
 
+    protected $casts = [
+        'tenggat_waktu' => 'date',
+    ];
+
     // In penjualan.php
     public function rincianPenjualans()
     {
         return $this->hasMany(RincianPenjualan::class, 'penjualan_id');
+    }
+
+    public function gudang()
+    {
+        return $this->hasMany(Gudang::class, 'gudangs_id');
     }
 
 
