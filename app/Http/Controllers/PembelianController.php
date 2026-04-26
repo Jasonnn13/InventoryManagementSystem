@@ -10,6 +10,7 @@ use App\Models\Gudang;
 use App\Models\GudangStock;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class PembelianController extends Controller
@@ -89,39 +90,63 @@ class PembelianController extends Controller
             'total' => 'required|numeric|min:0',
         ]);
 
-        // Update pembelian
-        $pembelian->update([
-            'suppliers_id' => $validated['suppliers_id'],
-            'gudangs_id' => $validated['gudangs_id'],
-            'total' => $validated['total'],
-        ]);
+        $oldGudangId = $pembelian->gudangs_id;
+        $newGudangId = (int) $validated['gudangs_id'];
+        $gudangChanged = $oldGudangId !== $newGudangId;
 
-        // Update suppliers_id for related stock items
-        $rincianPembelian = RincianPembelian::where('pembelian_id', $pembelian->id)->get();
+        DB::transaction(function () use ($pembelian, $validated, $oldGudangId, $newGudangId, $gudangChanged) {
+            // Update pembelian header
+            $pembelian->update([
+                'suppliers_id' => $validated['suppliers_id'],
+                'gudangs_id'   => $newGudangId,
+                'total'        => $validated['total'],
+            ]);
 
-        foreach ($rincianPembelian as $rincian) {
-            $stock = Stock::findOrFail($rincian->stocks_id);
-            $stock->suppliers_id = $validated['suppliers_id'];
-            $stock->save();
+            $rincianPembelians = RincianPembelian::where('pembelian_id', $pembelian->id)->get();
 
-            // Update GudangStock (ensure stock is linked to the correct gudang)
-            $gudangStock = GudangStock::where('stocks_id', $rincian->stocks_id)
-                                       ->where('gudangs_id', $validated['gudangs_id'])
-                                       ->first();
-            
-            if ($gudangStock) {
-                // If it exists, update it
-                $gudangStock->gudangs_id = $validated['gudangs_id'];
-                $gudangStock->save();
-            } else {
-                // If it doesn't exist, create a new record
-                GudangStock::create([
-                    'stocks_id' => $rincian->stocks_id,
-                    'gudangs_id' => $validated['gudangs_id'],
-                    'quantity' => $rincian->quantity,
-                ]);
+            foreach ($rincianPembelians as $rincian) {
+                // Update the linked supplier on the stock
+                $stock = Stock::findOrFail($rincian->stocks_id);
+                $stock->suppliers_id = $validated['suppliers_id'];
+                $stock->save();
+
+                if ($gudangChanged) {
+                    // Decrement (or remove) the old gudang's stock for this item
+                    $oldGudangStock = GudangStock::where('stocks_id', $rincian->stocks_id)
+                        ->where('gudangs_id', $oldGudangId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($oldGudangStock) {
+                        if ($oldGudangStock->quantity <= $rincian->quantity) {
+                            $oldGudangStock->delete();
+                        } else {
+                            $oldGudangStock->decrement('quantity', $rincian->quantity);
+                        }
+                    }
+
+                    // Increment (or create) the new gudang's stock for this item
+                    $newGudangStock = GudangStock::where('stocks_id', $rincian->stocks_id)
+                        ->where('gudangs_id', $newGudangId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if ($newGudangStock) {
+                        $newGudangStock->increment('quantity', $rincian->quantity);
+                    } else {
+                        GudangStock::create([
+                            'stocks_id'  => $rincian->stocks_id,
+                            'gudangs_id' => $newGudangId,
+                            'quantity'   => $rincian->quantity,
+                        ]);
+                    }
+
+                    // Recalculate the canonical stock total across all gudangs
+                    $stock->stock = GudangStock::where('stocks_id', $stock->id)->sum('quantity');
+                    $stock->save();
+                }
             }
-        }
+        });
 
         return redirect()->route('pembelian.index')
                          ->with('success', 'Pembelian updated successfully.');
@@ -129,33 +154,42 @@ class PembelianController extends Controller
 
     public function destroy(Pembelian $pembelian)
     {
-        $rincianPembelians = RincianPembelian::where('pembelian_id', $pembelian->id)->get();
+        DB::transaction(function () use ($pembelian) {
+            $rincianPembelians = RincianPembelian::where('pembelian_id', $pembelian->id)
+                ->lockForUpdate()
+                ->get();
 
-        foreach ($rincianPembelians as $rincian) {
-            $stock = Stock::findOrFail($rincian->stocks_id);
+            foreach ($rincianPembelians as $rincian) {
+                // Decrement the gudang that received this stock at purchase time.
+                // pembelian->gudangs_id is the canonical source; update() keeps it in sync.
+                $gudangStock = GudangStock::where('stocks_id', $rincian->stocks_id)
+                    ->where('gudangs_id', $pembelian->gudangs_id)
+                    ->lockForUpdate()
+                    ->first();
 
-            // Update the stock quantity
-            $stock->stock -= $rincian->quantity;
-            $stock->save();
+                if ($gudangStock) {
+                    if ($gudangStock->quantity <= $rincian->quantity) {
+                        // Quantity would hit zero — remove the row entirely
+                        $gudangStock->delete();
+                    } else {
+                        $gudangStock->decrement('quantity', $rincian->quantity);
+                    }
+                }
 
-            // Update GudangStock (remove stock from warehouse)
-            $gudangStock = GudangStock::where('stocks_id', $rincian->stocks_id)
-                                       ->where('gudangs_id', $pembelian->gudangs_id)
-                                       ->first();
+                // Recalculate canonical stock total from remaining GudangStock rows
+                $stock = Stock::find($rincian->stocks_id);
+                if ($stock) {
+                    $stock->stock = GudangStock::where('stocks_id', $stock->id)->sum('quantity');
+                    $stock->save();
+                }
 
-            if ($gudangStock) {
-                $gudangStock->quantity -= $rincian->quantity;
-                $gudangStock->save();
+                $rincian->delete();
             }
 
-            // Delete each rincian pembelian record
-            $rincian->delete();
-        }
-
-        // Delete the pembelian itself
-        $pembelian->delete();
+            $pembelian->delete();
+        });
 
         return redirect()->route('pembelian.index')
-                        ->with('success', 'Pembelian and associated rincian pembelian deleted successfully.');
+            ->with('success', 'Pembelian and associated rincian pembelian deleted successfully.');
     }
 }

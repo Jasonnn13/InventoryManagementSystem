@@ -1,467 +1,105 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>User Levels</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" integrity="sha512-AA1Bzp5Q0K1KanKKmvN/4d3IRKVlv9PYgwFPvm32nPO6QS8yH1HO7LbgB1pgiOxPtfeg5zEn2ba64MUcqJx6CA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <h2 class="app-page-title">Perizinan Pengguna</h2>
+            </div>
+        </div>
+    </x-slot>
 
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            color: #fff;
-            background-color: #1f1f1f;
-        }
-        .hamburger {
-            display: none; /* Hide by default on larger screens */
-            font-size: 1.5em;
-            cursor: pointer;
-            background: none;
-            border: none;
-            color: #fff;
-        }   
-        .container {
-            display: flex;
-            height: 100vh;
-        }
-        .sidebar {
-            width: 250px;
-            background-color: #2c2c2c;
-            padding: 20px;
-        }
-        .logo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo img {
-            width: 100px;
-        }
-        .menu {
-            list-style-type: none;
-            padding: 0;
-        }
-        .menu ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        .menu li {
-            margin: 10px 0;
-        }
-        .menu li a {
-            color: #fff;
-            text-decoration: none;
-            display: block;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .menu li a:hover,
-        .menu li a:focus {
-            background-color: #3a3a3a;
-        }
-        .menu li a.active {
-            background-color: #4caf50;
-        }
-        .menu li ul {
-            display: none;
-            padding-left: 20px;
-        }
-        .menu li:hover ul,
-        .menu li:focus ul {
-            display: block;
-        }
-        .main-content {
-            flex-grow: 1;
-            background-color: #2e2e2e;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .header h1 {
-            margin: 0;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .logout-button {
-            background-color: #f44336;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .content {
-            background-color: #3c3c3c;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .btn-primary {
-            background-color: #4caf50;
-            color: #fff;
-        }
-        .btn-secondary {
-            background-color: #f44336;
-            color: #fff;
-        }
-        .btn-secondary.red-outline {
-            border: 1px solid #000; /* Black outline for delete button */
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #5a5a5a;
-        }
-        th {
-            background-color: #4caf50;
-        }
-        tr:hover {
-            background-color: #3a3a3a;
-        }
-        .search-form {
-            margin-bottom: 20px;
-        }
-        .search-form input {
-            margin-top: 20px;
-            padding: 10px;
-            width: calc(100% - 120px);
-            border: 1px solid #4caf50;
-            border-radius: 5px 0 0 5px;
-            background-color: #3a3a3a;
-            color: #fff;
-        }
-        .search-form button {
-            padding: 10px;
-            border: none;
-            border-radius: 0 5px 5px 0;
-            background-color: #4caf50;
-            color: #fff;
-            cursor: pointer;
-        }
-        .category-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .category-header h3 {
-            margin: 0;
-        }
-        .overdue {
-            background-color: #ff4444; /* Red background for overdue */
-        }
-        .overdue:hover {
-            background-color: #cc0000; /* Darker red on hover for overdue */
-        }
-        .action-icons {
-            display: flex;
-            gap: 10px;
-        }
-        .action-icons i {
-            cursor: pointer;
-            font-size: 18px;
-            color: #fff;
-        }
-        .action-icons .edit {
-            color: #4caf50;
-        }
-        .action-icons .delete {
-            color: #f44336;
-        }
-        .overdue {
-            background-color: #ff4444; /* Red background for overdue */
-        }
-
-        .overdue:hover {
-            background-color: #cc0000; /* Darker red on hover for overdue */
-        }
-    @media (max-width: 480px) {
-        .hamburger {
-            display: block; /* Show hamburger on small screens */
-        }
-
-        .sidebar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 250px;
-                height: 100%;
-                z-index: 1000;
-                overflow-x: hidden;
-                background-color: #2c2c2c;
-                padding: 20px;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            .backdrop {
-                display: none; /* Hide by default */
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-                z-index: 900; /* Behind sidebar but above content */
-                transition: opacity 0.3s ease;
-            }
-
-            .backdrop.show {
-                display: block;
-            }
-
-        .menu-toggle {
-            display: block;
-            background-color: #4caf50;
-            color: #fff;
-            padding: 10px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            margin: 10px;
-        }
-
-        .user-name {
-            display: none; /* Hide user info on small screens */
-        }
-
-        .main-content {
-            padding: 10px; /* Reduce padding for smaller screens */
-            margin-left: 0; /* No left margin on small screens */
-        }
-
-        .container {
-            flex-direction: column;
-        }
-
-        .menu li a {
-            padding: 8px;
-        }
-
-        .header {
-            padding: 10px;
-            /* flex-direction: column; */
-            align-items: center;
-            justify-content: space-between;
-
-        }
-
-        .header h1 {
-            font-size: 1.5em;
-            align-self: center;
-            text-align: center;
-        }
-        table {
-        width: 100%; /* Make the table full width */
-        border-collapse: collapse; /* Ensure borders are collapsed */
-        }
-        th, td {
-            display: block; /* Make table cells block elements */
-            width: 100%; /* Full width for cells */
-            box-sizing: border-box; /* Include padding and border in element's total width and height */
-            padding: 10px; /* Add some padding */
-            text-align: left; /* Align text to the left */
-        }
-        thead {
-            display: none; /* Hide the header on small screens */
-        }
-        tr {
-            display: block; /* Make each row a block */
-            margin-bottom: 10px; /* Add space between rows */
-            border-bottom: 1px solid #5a5a5a; /* Add a border between rows */
-            background-color: #2e2e2e; /* Background color for each row */
-            border: 1px solid #4caf50; /* Add a green border around each cell */
-            gap: 20px; /* Add some space between cells */
-        }
-        tr:last-child {
-            border-bottom: none; /* Remove border from the last row */
-        }
-        td::before {
-            content: attr(data-label); /* Add labels for each cell */
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px; /* Space between label and data */
-        }
-    }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <aside class="sidebar">
-            <nav class="menu">
-                <ul>
-                    <li><a href="/dashboard" class="active">Dashboard</a></li>
-                    <li><a href="/stocks">Stocks</a></li>
-                    <li><a href="/pembelian">Pembelian</a></li>
-                    <li><a href="/penjualan">Penjualan</a></li>
-                    <li><a href="/suppliers">Suppliers</a></li>
-                    <li><a href="/customers">Customers</a></li>
-                </ul>
-            </nav>
-        </aside>
-        <div class="backdrop" id="backdrop" onclick="toggleSidebar()"></div>
-        <main class="main-content">
-            <header class="header">
-                <button class="hamburger" onclick="toggleSidebar()">☰</button>
-                <h1>User Levels</h1>
-                <div class="user-info">
-                    <span class="user-name">{{ Auth::user()->name }}</span>
-                    <button class="logout-button" onclick="document.getElementById('logout-form').submit();">Logout</button>
+    <div class="space-y-6">
+        @foreach ([['title' => 'Request', 'users' => $requests, 'empty' => 'Belum ada request.'], ['title' => 'Admin', 'users' => $admins, 'empty' => 'Belum ada admin.'], ['title' => 'Owner', 'users' => $owners, 'empty' => 'Belum ada owner lain.']] as $group)
+            <section class="app-panel overflow-hidden">
+                <div class="border-b border-[color:var(--app-border)] px-6 py-4">
+                    <h3 class="text-lg font-semibold tracking-tight">{{ $group['title'] }}</h3>
                 </div>
-                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                    @csrf
-                </form>
-            </header>
-            <section class="content">
-                <!-- Level 2 Users -->
-                <h2>Level 2 Users</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($dua as $user)
+                <div class="overflow-x-auto">
+                    <table class="app-table">
+                        <thead>
                             <tr>
-                                <td data-label="Name">{{ $user->name }}</td>
-                                <td data-label="Email">{{ $user->email }}</td>
-                                <td></td>
+                                <th>Name</th>
+                                <th>Email</th>
+                                <th class="w-64">Actions</th>
                             </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-                
-                <!-- Level 1 Users -->
-                <h2>Level 1 Users</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($satu as $user)
-                            <tr>
-                                <td data-label="Name">{{ $user->name }}</td>
-                                <td data-label="Email">{{ $user->email }}</td>
-                                @if (Auth::user()->level > 1)
-                                    <td data-label="Actions">
-                                        <div class="action-icons">
-                                            <a href="{{ route('level.edit', $user->id) }}" class="edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form action="{{ route('level.destroy', $user->id) }}" method="POST" style="display: inline;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="delete" style="background: none; border: none; cursor: pointer;" onclick="confirmation(event)">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            </form>
-                                        </div>
-                                    </td>
-                                    @else
-                                    <td></td>
-                                @endif
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                        </thead>
+                        <tbody>
+                            @forelse($group['users'] as $user)
+                                <tr>
+                                    <td class="font-medium text-neutral-900 dark:text-neutral-100">{{ $user->name }}</td>
+                                    <td>{{ $user->email }}</td>
+                                    <td>
+                                        <div class="flex flex-wrap gap-2">
+                                            @if(auth()->user()->isAdmin() && $user->isRequest())
+                                                <form action="{{ route('level.approve', $user->id) }}" method="POST">
+                                                    @csrf
+                                                    <x-primary-button type="submit">Setujui</x-primary-button>
+                                                </form>
+                                            @endif
 
-                <!-- Level 0 Users -->
-                <h2>Level 0 Users</h2>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Email</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach($nol as $user)
-                            <tr>
-                                <td data-label="Name">{{ $user->name }}</td>
-                                <td data-label="Email">{{ $user->email }}</td>
-                                @if (Auth::user()->level > 0)
-                                    <td data-label="Actions">
-                                        <div class="action-icons">
-                                            <a href="{{ route('level.edit', $user->id) }}" class="edit">
-                                                <i class="fas fa-edit"></i>
-                                            </a>
-                                            <form action="{{ route('level.destroy', $user->id) }}" method="POST" style="display: inline;">
-                                                @csrf
-                                                @method('DELETE')
-                                                <button type="submit" class="delete" style="background: none; border: none; cursor: pointer;" onclick="confirmation(event)">
-                                                    <i class="fas fa-trash-alt"></i>
-                                                </button>
-                                            </form>
+                                            @if(auth()->user()->isOwner() && ! $user->isOwner())
+                                                <a href="{{ route('level.edit', $user->id) }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Ubah</a>
+                                                <form action="{{ route('level.destroy', $user->id) }}" method="POST" onsubmit="return confirmation(event, this)">
+                                                    @csrf
+                                                    @method('DELETE')
+                                                    <x-danger-button type="submit" class="delete-button">Hapus</x-danger-button>
+                                                </form>
+                                            @endif
                                         </div>
                                     </td>
-                                @endif
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
+                                </tr>
+                            @empty
+                                <tr>
+                                    <td colspan="3" class="text-neutral-500 dark:text-neutral-400">{{ $group['empty'] }}</td>
+                                </tr>
+                            @endforelse
+                        </tbody>
+                    </table>
+                </div>
             </section>
-        </main>
+        @endforeach
     </div>
-    <script>
 
-    function toggleSidebar() {
-        const sidebar = document.querySelector('.sidebar');
-        const backdrop = document.getElementById('backdrop');
-        sidebar.classList.toggle('show');
-        backdrop.classList.toggle('show');
-    }
+    @push('scripts')
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" integrity="sha512-AA1Bzp5Q0K1KanKKmvN/4d3IRKVlv9PYgwFPvm32nPO6QS8yH1HO7LbgB1pgiOxPtfeg5zEn2ba64MUcqJx6CA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script>
+            function runSwal(options, onConfirm) {
+                const invoke = function () {
+                    const result = swal(options);
+                    if (onConfirm) {
+                        result.then(onConfirm);
+                    }
+                };
 
-    function confirmation(event) {
-        event.stopPropagation(); // Stop the event from propagating to the <tr> click event
-        event.preventDefault();   // Prevent the form from submitting immediately
+                if (typeof swal === 'function') {
+                    invoke();
+                    return;
+                }
 
-        swal({
-            title: "Are you sure you want to delete this user?",
-            text: "This action cannot be undone.",
-            icon: "warning",
-            buttons: true,
-            dangerMode: true,
-        })
-        .then((willDelete) => {
-            if (willDelete) {
-                // If the user confirms, submit the form
-                event.target.closest('form').submit();
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js';
+                script.onload = invoke;
+                document.head.appendChild(script);
             }
-        });
-    }
-    </script>
-</body>
-</html>
+
+            function confirmation(event, form) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                runSwal({
+                    title: 'Hapus pengguna ini?',
+                    text: 'Tindakan ini tidak dapat dibatalkan.',
+                    icon: 'warning',
+                    buttons: true,
+                    dangerMode: true,
+                }, function (willDelete) {
+                    if (willDelete) {
+                        form.submit();
+                    }
+                });
+
+                return false;
+            }
+        </script>
+    @endpush
+</x-app-layout>
+

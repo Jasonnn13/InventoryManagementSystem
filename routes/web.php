@@ -23,10 +23,11 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-Route::get('/wait', function () {
+Route::middleware('auth')->get('/wait', function () {
     if (Auth::user()->level >= 1) {
         return redirect()->route('dashboard');
     }
+
     return view('wait');
 })->name('wait');
 
@@ -34,9 +35,15 @@ Route::get('/overdue', function () {
     return view('overdue');
 })->name('overdue');
 
+Route::middleware('auth')->group(function () {
+    Route::get('/profile', [ProfileController::class, 'edit'])->name('profile.edit');
+    Route::patch('/profile', [ProfileController::class, 'update'])->name('profile.update');
+    Route::delete('/profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
+});
 
-// Routes that require authentication and email verification
-Route::middleware(['auth', 'verified', 'admin'])->group(function () {
+
+// Routes that require authentication and admin access
+Route::middleware(['auth', 'admin'])->group(function () {
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
     Route::get('/rincianpenjualan/{penjualan_id}', [RincianPenjualanController::class, 'index'])->name('rincianpenjualan.index');
@@ -63,9 +70,11 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::get('/stocks/create', [StockController::class, 'create'])->name('stocks.create');
     Route::post('/stocks', [StockController::class, 'store'])->name('stocks.store');
     Route::delete('/stocks/{stock}', [StockController::class, 'destroy'])->name('stocks.destroy');
+    Route::get('/stocks/{stock}/history', [StockController::class, 'history'])->name('stocks.history');
     Route::get('/stocks/{stock}/edit', [StockController::class, 'edit'])->name('stocks.edit');
     Route::put('/stocks/{stock}', [StockController::class, 'update'])->name('stocks.update');
     Route::get('/stocks/autocomplete', [StockController::class, 'autocomplete']);
+    Route::get('/stocks/{stock}/available-gudangs', [StockController::class, 'availableGudangs'])->name('stocks.available-gudangs');
 
     
     // Additional routes that require authentication and verification
@@ -74,6 +83,7 @@ Route::middleware(['auth', 'verified', 'admin'])->group(function () {
     Route::get('/rincianpenjualan/{penjualan_id}/suratjalan', [PdfgenerateController::class, 'generatePDF2'])->name('rincianpenjualan.suratjalan');
     
     Route::resource('level', LevelController::class);
+    Route::post('/level/{id}/approve', [LevelController::class, 'approve'])->name('level.approve');
     
 });
 

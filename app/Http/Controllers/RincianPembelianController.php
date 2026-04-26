@@ -33,6 +33,8 @@ class RincianPembelianController extends Controller
 
     public function store(Request $request)
     {
+        $this->normalizeStorePrices($request);
+
         // Validate the incoming request data
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
@@ -147,7 +149,7 @@ class RincianPembelianController extends Controller
 
         
     
-        return redirect()->route('rincianpembelian.index', $pembelianId)->with('success', 'Items added and updated successfully');
+        return redirect()->route('rincianpembelian.index', ['pembelian_id' => $pembelianId])->with('success', 'Items added and updated successfully');
     }
     
 
@@ -163,6 +165,10 @@ class RincianPembelianController extends Controller
 
     public function update(Request $request, $id)
     {
+        $request->merge([
+            'price' => $this->normalizeRupiah($request->input('price')),
+        ]);
+
         // Find the RincianPembelian record and related models
         $rincianPembelian = RincianPembelian::findOrFail($id);
         $stock = Stock::findOrFail($rincianPembelian->stocks_id);
@@ -237,6 +243,44 @@ class RincianPembelianController extends Controller
     
         return redirect()->route('rincianpembelian.index', ['pembelian_id' => $rincianPembelian->pembelian_id])
             ->with('success', 'Rincian pembelian deleted successfully.');
+    }
+
+    private function normalizeStorePrices(Request $request): void
+    {
+        $items = $request->input('items', []);
+
+        if (isset($items['new']) && is_array($items['new'])) {
+            foreach ($items['new'] as $index => $item) {
+                $items['new'][$index]['price'] = $this->normalizeRupiah($item['price'] ?? null);
+            }
+        }
+
+        if (isset($items['existing']) && is_array($items['existing'])) {
+            foreach ($items['existing'] as $index => $item) {
+                $items['existing'][$index]['price'] = $this->normalizeRupiah($item['price'] ?? null);
+            }
+        }
+
+        $request->merge(['items' => $items]);
+    }
+
+    private function normalizeRupiah($value): int
+    {
+        if ($value === null) {
+            return 0;
+        }
+
+        if (is_int($value)) {
+            return $value;
+        }
+
+        if (is_float($value)) {
+            return (int) round($value);
+        }
+
+        $digitsOnly = preg_replace('/[^\d]/', '', (string) $value);
+
+        return $digitsOnly === '' ? 0 : (int) $digitsOnly;
     }
     
 

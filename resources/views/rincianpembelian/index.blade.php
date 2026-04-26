@@ -1,437 +1,141 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" integrity="sha512-AA1Bzp5Q0K1KanKKmvN/4d3IRKVlv9PYgwFPvm32nPO6QS8yH1HO7LbgB1pgiOxPtfeg5zEn2ba64MUcqJx6CA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <h2 class="app-page-title">Rincian Pembelian</h2>
+            </div>
+            <a href="{{ route('rincianpembelian.create', $pembelian->id) }}" class="inline-flex items-center justify-center rounded-full border border-black bg-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition duration-150 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 dark:focus:ring-white" id="addBtn">Tambah Item</a>
+        </div>
+    </x-slot>
 
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Rincian Pembelian</title>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css">
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            color: #fff;
-            background-color: #1f1f1f;
-        }
-        .hamburger {
-            display: none; /* Hide by default on larger screens */
-            font-size: 1.5em;
-            cursor: pointer;
-            background: none;
-            border: none;
-            color: #fff;
-        }   
-        .container {
-            display: flex;
-            height: 100vh;
-        }
-        .sidebar {
-            width: 250px;
-            background-color: #2c2c2c;
-            padding: 20px;
-        }
-        .logo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo img {
-            width: 100px;
-        }
-        .menu {
-            list-style-type: none;
-            padding: 0;
-        }
-        .menu ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        .menu li {
-            margin: 10px 0;
-        }
-        .menu li a {
-            color: #fff;
-            text-decoration: none;
-            display: block;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .menu li a:hover,
-        .menu li a:focus {
-            background-color: #3a3a3a;
-        }
-        .menu li a.active {
-            background-color: #4caf50;
-        }
-        .menu li ul {
-            display: none;
-            padding-left: 20px;
-        }
-        .menu li:hover ul,
-        .menu li:focus ul {
-            display: block;
-        }
-        .main-content {
-            flex-grow: 1;
-            background-color: #2e2e2e;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .header h1 {
-            margin: 0;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .logout-button {
-            background-color: #f44336;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .content {
-            background-color: #3c3c3c;
-            padding: 20px;
-            border-radius: 5px;
-            margin-bottom: 20px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .btn-primary {
-            background-color: #4caf50;
-            color: #fff;
-        }
-        .btn-secondary {
-            background-color: #f44336;
-            color: #fff;
-        }
-        .btn-secondary.red-outline {
-            border: 1px solid #000; /* Black outline for delete button */
-        }
-        table {
-            width: 100%;
-            border-collapse: collapse;
-            margin-bottom: 20px;
-        }
-        th, td {
-            padding: 10px;
-            text-align: left;
-            border-bottom: 1px solid #5a5a5a;
-        }
-        th {
-            background-color: #4caf50;
-        }
-        tr:hover {
-            background-color: #3a3a3a;
-        }
-        .search-form {
-            margin-bottom: 20px;
-        }
-        .search-form input {
-            margin-top: 20px;
-            padding: 10px;
-            width: calc(100% - 120px);
-            border: 1px solid #4caf50;
-            border-radius: 5px 0 0 5px;
-            background-color: #3a3a3a;
-            color: #fff;
-        }
-        .search-form button {
-            padding: 10px;
-            border: none;
-            border-radius: 0 5px 5px 0;
-            background-color: #4caf50;
-            color: #fff;
-            cursor: pointer;
-        }
-        .category-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .category-header h3 {
-            margin: 0;
-        }
-        .overdue {
-            background-color: #ff4444; /* Red background for overdue */
-        }
-        .overdue:hover {
-            background-color: #cc0000; /* Darker red on hover for overdue */
-        }
-        .action-icons {
-            display: flex;
-            gap: 10px;
-        }
-        .action-icons i {
-            cursor: pointer;
-            font-size: 18px;
-            color: #fff;
-        }
-        .action-icons .edit {
-            color: #4caf50;
-        }
-        .action-icons .delete {
-            color: #f44336;
-        }
-        .overdue {
-            background-color: #ff4444; /* Red background for overdue */
-        }
-
-        .overdue:hover {
-            background-color: #cc0000; /* Darker red on hover for overdue */
-        }
-    @media (max-width: 480px) {
-        .hamburger {
-            display: block; /* Show hamburger on small screens */
-        }
-
-        .sidebar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 250px;
-                height: 100%;
-                z-index: 1000;
-                overflow-x: hidden;
-                background-color: #2c2c2c;
-                padding: 20px;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            .backdrop {
-                display: none; /* Hide by default */
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-                z-index: 900; /* Behind sidebar but above content */
-                transition: opacity 0.3s ease;
-            }
-
-            .backdrop.show {
-                display: block;
-            }
-
-        .menu-toggle {
-            display: block;
-            background-color: #4caf50;
-            color: #fff;
-            padding: 10px;
-            cursor: pointer;
-            border: none;
-            border-radius: 5px;
-            margin: 10px;
-        }
-
-        .user-name {
-            display: none; /* Hide user info on small screens */
-        }
-
-        .main-content {
-            padding: 10px; /* Reduce padding for smaller screens */
-            margin-left: 0; /* No left margin on small screens */
-        }
-
-        .container {
-            flex-direction: column;
-        }
-
-        .menu li a {
-            padding: 8px;
-        }
-
-        .header {
-            padding: 10px;
-            /* flex-direction: column; */
-            align-items: center;
-            justify-content: space-between;
-
-        }
-
-        .header h1 {
-            font-size: 1.5em;
-            align-self: center;
-            text-align: center;
-        }
-        table {
-        width: 100%; /* Make the table full width */
-        border-collapse: collapse; /* Ensure borders are collapsed */
-        }
-        th, td {
-            display: block; /* Make table cells block elements */
-            width: 100%; /* Full width for cells */
-            box-sizing: border-box; /* Include padding and border in element's total width and height */
-            padding: 10px; /* Add some padding */
-            text-align: left; /* Align text to the left */
-        }
-        thead {
-            display: none; /* Hide the header on small screens */
-        }
-        tr {
-            display: block; /* Make each row a block */
-            margin-bottom: 10px; /* Add space between rows */
-            border-bottom: 1px solid #5a5a5a; /* Add a border between rows */
-            background-color: #2e2e2e; /* Background color for each row */
-            border: 1px solid #4caf50; /* Add a green border around each cell */
-            gap: 20px; /* Add some space between cells */
-        }
-        tr:last-child {
-            border-bottom: none; /* Remove border from the last row */
-        }
-        td::before {
-            content: attr(data-label); /* Add labels for each cell */
-            font-weight: bold;
-            display: block;
-            margin-bottom: 5px; /* Space between label and data */
-        }
-    }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <aside class="sidebar">
-            <nav class="menu">
-                <ul>
-                    <li><a href="/dashboard">Dashboard</a></li>
-                    <li><a href="/stocks">Stocks</a></li>
-                    <li><a href="/pembelian" class="active">Pembelian</a></li>
-                    <li><a href="/penjualan">Penjualan</a></li>
-                    <li><a href="/suppliers">Suppliers</a></li>
-                    <li><a href="/customers">Customers</a></li>
-                </ul>
-            </nav>
-        </aside>
-        <div class="backdrop" id="backdrop" onclick="toggleSidebar()"></div>
-        <main class="main-content">
-            <header class="header">
-                <button class="hamburger" onclick="toggleSidebar()">☰</button>
-                <h1>Rincian Pembelian</h1>
-                <div class="user-info">
-                    <span class="user-name">{{ Auth::user()->name }}</span>
-                    <button class="logout-button" onclick="document.getElementById('logout-form').submit();">Logout</button>
-                </div>
-                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                    @csrf
-                </form>
-            </header>
-            <section class="content">
-                <div class="category-header">
-                    <h3>Rincian Pembelian</h3>
-                    <a href="{{ route('rincianpembelian.create', $pembelian->id) }}" class="btn btn-primary" id="addBtn">Add Item</a>
-                </div>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Stock Name</th>
-                            <th>Quantity</th>
-                            <th>Price</th>
-                            <th>Total</th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                    @foreach($rincianpembelians as $rincian)
+    <div class="app-panel overflow-hidden">
+        <div class="border-b border-[color:var(--app-border)] px-6 py-4">
+            <h3 class="text-lg font-semibold tracking-tight">Items</h3>
+        </div>
+        <div class="overflow-x-auto">
+            <table class="app-table">
+                <thead>
+                    <tr>
+                        <th>Stock Name</th>
+                        <th>Quantity</th>
+                        <th>Price</th>
+                        <th>Total</th>
+                        <th class="w-56 whitespace-nowrap">Actions</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @forelse($rincianpembelians as $rincian)
                         <tr data-created-by="{{ $rincian->pembelian->user->id }}">
-                            <td data-label="Name">{{ $rincian->stock->name }}</td>
-                            <td data-label="Quantity">{{ $rincian->quantity }}</td>
-                            <td data-label="Price">Rp. {{ number_format($rincian->price, 0, ',', '.') }}</td>
-                            <td data-label="Total">Rp. {{ number_format($rincian->total, 0, ',', '.') }}</td>
-                            <td data-label="Actions">
-                                <div class="action-icons">
-                                    <a href="{{ route('rincianpembelian.edit', $rincian->id) }}" class="edit">
-                                        <i class="fas fa-edit"></i>
-                                    </a>
-                                    <form action="{{ route('rincianpembelian.destroy', $rincian->id) }}" method="POST" style="display: inline;">
+                            <td class="font-medium text-neutral-900 dark:text-neutral-100">{{ $rincian->stock->name }}</td>
+                            <td>{{ $rincian->quantity }}</td>
+                            <td>Rp. {{ number_format($rincian->price, 0, ',', '.') }}</td>
+                            <td>Rp. {{ number_format($rincian->total, 0, ',', '.') }}</td>
+                            <td onclick="event.stopPropagation()">
+                                <div class="flex flex-nowrap items-center gap-2 whitespace-nowrap">
+                                    <a href="{{ route('rincianpembelian.edit', $rincian->id) }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white edit">Ubah</a>
+                                    <form action="{{ route('rincianpembelian.destroy', $rincian->id) }}" method="POST" onsubmit="return confirmation(event, this)">
                                         @csrf
                                         @method('DELETE')
-                                        <button type="submit" class="delete" style="background: none; border: none; cursor: pointer;" onclick="confirmation(event)">
-                                            <i class="fas fa-trash-alt"></i>
-                                        </button>
+                                        <x-danger-button type="submit" class="delete">Hapus</x-danger-button>
                                     </form>
-
                                 </div>
                             </td>
                         </tr>
-                    @endforeach
-                    </tbody>
-                </table>
-            </section>
-        </main>
+                    @empty
+                        <tr>
+                            <td colspan="5" class="text-neutral-500 dark:text-neutral-400">No purchase details found.</td>
+                        </tr>
+                    @endforelse
+                </tbody>
+            </table>
+        </div>
     </div>
-    <script>
-            let userLevel = {{ Auth::user()->level }}; // User's level (1 or 2)
-            let userId = {{ Auth::user()->id }}; // User's ID
 
-            function toggleSidebar() {
-        const sidebar = document.querySelector('.sidebar');
-        const backdrop = document.getElementById('backdrop');
-        sidebar.classList.toggle('show');
-        backdrop.classList.toggle('show');
-    }
+    @push('scripts')
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" integrity="sha512-AA1Bzp5Q0K1KanKKmvN/4d3IRKVlv9PYgwFPvm32nPO6QS8yH1HO7LbgB1pgiOxPtfeg5zEn2ba64MUcqJx6CA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+        <script>
+            const userLevel = @json(Auth::user()->level);
+            const userId = @json(Auth::user()->id);
 
-function confirmation(event) {
-    event.stopPropagation(); // Stop the event from propagating to the <tr> click event
-    event.preventDefault();   // Prevent the form from submitting immediately
+            function runSwal(options, onConfirm) {
+                const invoke = function () {
+                    const result = swal(options);
+                    if (onConfirm) {
+                        result.then(onConfirm);
+                    }
+                };
 
-    swal({
-        title: "Are you sure you want to delete this record?",
-        text: "This action cannot be undone.",
-        icon: "warning",
-        buttons: true,
-        dangerMode: true,
-    })
-    .then((willDelete) => {
-        if (willDelete) {
-            // If the user confirms, submit the form
-            event.target.closest('form').submit();
-        }
-    });
-}
-
-document.addEventListener('DOMContentLoaded', function () {
-        document.querySelectorAll('tbody tr').forEach(function (row) {
-            let createdBy = parseInt(row.getAttribute('data-created-by')); // User ID who created the record
-            let editButton = row.querySelector('.edit');
-            let deleteButton = row.querySelector('.delete');
-
-            // Check if the user is level 1 and doesn't own this record
-            if (userLevel === 1 && userId !== createdBy) {
-                // Hide edit and delete buttons for level 1 users who don't own the record
-                if (editButton) {
-                    editButton.style.display = 'none';
+                if (typeof swal === 'function') {
+                    invoke();
+                    return;
                 }
-                if (deleteButton) {
-                    deleteButton.style.display = 'none';
-                }
-                if (addBtn) {
-                    addBtn.style.display = 'none';
-                }
+
+                const script = document.createElement('script');
+                script.src = 'https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js';
+                script.onload = invoke;
+                document.head.appendChild(script);
             }
-        });
-    });
-</script>
-</body>
-</html>
+
+            function permissionDenied(message) {
+                runSwal({
+                    title: message,
+                    text: 'Tindakan ini tidak dapat dibatalkan.',
+                    icon: 'error',
+                    button: 'OK',
+                });
+
+                return false;
+            }
+
+            function confirmation(event, form) {
+                event.preventDefault();
+                event.stopPropagation();
+
+                runSwal({
+                    title: 'Apakah Anda yakin ingin menghapus data ini?',
+                    text: 'Tindakan ini tidak dapat dibatalkan.',
+                    icon: 'warning',
+                    buttons: true,
+                    dangerMode: true,
+                }, function (willDelete) {
+                    if (willDelete) {
+                        form.submit();
+                    }
+                });
+
+                return false;
+            }
+
+            document.addEventListener('DOMContentLoaded', function () {
+                const addButton = document.getElementById('addBtn');
+                document.querySelectorAll('tbody tr[data-created-by]').forEach(function (row) {
+                    const createdBy = parseInt(row.getAttribute('data-created-by'), 10);
+                    const editButton = row.querySelector('.edit');
+                    const deleteButton = row.querySelector('.delete');
+
+                    if (userLevel === 1 && userId !== createdBy) {
+                        if (editButton) {
+                            editButton.addEventListener('click', function (event) {
+                                event.preventDefault();
+                                permissionDenied('Maaf, Anda tidak memiliki izin untuk mengubah rincian pembelian ini');
+                            });
+                        }
+                        if (deleteButton) {
+                            deleteButton.addEventListener('click', function (event) {
+                                event.preventDefault();
+                                permissionDenied('Maaf, Anda tidak memiliki izin untuk menghapus rincian pembelian ini');
+                            });
+                        }
+                        if (addButton) {
+                            addButton.addEventListener('click', function (event) {
+                                event.preventDefault();
+                                permissionDenied('Maaf, Anda tidak memiliki izin untuk menambah rincian pembelian ini');
+                            });
+                        }
+                    }
+                });
+            });
+        </script>
+    @endpush
+</x-app-layout>
+

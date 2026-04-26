@@ -11,7 +11,7 @@ class Penjualan extends Model
 
     protected $table = 'penjualan';
 
-    protected $fillable = ['gudangs_id', 'customers_id', 'total', 'users_id', 'status', 'tenggat_waktu', 'sales', 'diskon', 'ppn', 'total_netto', 'dpp', 'tipe'];
+    protected $fillable = ['gudangs_id', 'customers_id', 'total', 'users_id', 'status', 'tenggat_waktu', 'sales', 'diskon', 'ppn', 'total_netto', 'dpp', 'tipe', 'tipe_ppn'];
 
     public function customer()
     {

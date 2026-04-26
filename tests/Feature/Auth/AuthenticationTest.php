@@ -3,6 +3,7 @@
 namespace Tests\Feature\Auth;
 
 use App\Models\User;
+use Database\Seeders\UsersSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -19,11 +20,37 @@ class AuthenticationTest extends TestCase
 
     public function test_users_can_authenticate_using_the_login_screen(): void
     {
-        $user = User::factory()->create();
+        $user = User::factory()->create(['level' => User::LEVEL_REQUEST]);
 
         $response = $this->post('/login', [
             'email' => $user->email,
             'password' => 'password',
+        ]);
+
+        $this->assertAuthenticated();
+        $response->assertRedirect(route('wait', absolute: false));
+    }
+
+    public function test_admin_users_can_reach_the_dashboard(): void
+    {
+        $user = User::factory()->create(['level' => User::LEVEL_ADMIN]);
+
+        $response = $this->post('/login', [
+            'email' => $user->email,
+            'password' => 'password',
+        ]);
+
+        $this->assertAuthenticatedAs($user);
+        $response->assertRedirect(route('dashboard', absolute: false));
+    }
+
+    public function test_seeded_admin_credentials_can_login(): void
+    {
+        $this->seed(UsersSeeder::class);
+
+        $response = $this->post('/login', [
+            'email' => 'admin@example.com',
+            'password' => 'ims2@123',
         ]);
 
         $this->assertAuthenticated();

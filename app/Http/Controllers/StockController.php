@@ -6,6 +6,8 @@ use App\Models\Supplier;
 use App\Models\Stock;
 use App\Models\Gudang;
 use App\Models\GudangStock;
+use App\Models\RincianPembelian;
+use App\Models\RincianPenjualan;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
@@ -15,9 +17,13 @@ class StockController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $gudangId = $request->input('gudang_id');
     
         // Fetch stocks with related stock and gudang details, applying search filters if provided
         $stocks = GudangStock::with(['stock', 'gudang'])
+            ->when($gudangId, function ($query, $gudangId) {
+                $query->where('gudangs_id', $gudangId);
+            })
             ->when($search, function ($query, $search) {
                 $query->whereHas('stock', function ($q) use ($search) {
                     $q->where('name', 'like', "%{$search}%")
@@ -30,13 +36,12 @@ class StockController extends Controller
                     $q->where('name', 'like', "%{$search}%");
                 });
             })
+            ->orderBy('created_at', 'desc')
             ->paginate(10);
     
-        $stocks->getCollection()->sortByDesc(function ($item) {
-            return $item->stock->created_at;
-        });
-    
-        return view('stocks.index', compact('stocks', 'search'));
+        $gudangs = Gudang::orderBy('name')->get();
+
+        return view('stocks.index', compact('stocks', 'search', 'gudangs', 'gudangId'));
     }
     
     
@@ -156,16 +161,87 @@ class StockController extends Controller
             ->where('name', 'like', "%{$search}%")
             ->orWhere('kode', 'like', "%{$search}%")
             ->limit(10)
-            ->get(['id', 'name', 'kode']);
+            ->get(['id', 'name', 'kode', 'beli', 'stock']);
         
         $results = $stocks->map(function ($stock) {
             return [
+                'id' => $stock->id,
                 'label' => $stock->name, // Display name
-                // 'value' => $stock->id,   // ID to be used in the hidden field
+                'price' => (int) ($stock->beli ?? 0),
+                'quantity' => (int) ($stock->stock ?? 0),
             ];
         });
         
         return response()->json($results);
+    }
+
+    public function availableGudangs(Stock $stock)
+    {
+        $gudangs = GudangStock::with('gudang')
+            ->where('stocks_id', $stock->id)
+            ->where('quantity', '>', 0)
+            ->orderByDesc('quantity')
+            ->get()
+            ->map(function ($gudangStock) {
+                return [
+                    'id' => $gudangStock->gudang->id,
+                    'name' => $gudangStock->gudang->name,
+                    'quantity' => (int) $gudangStock->quantity,
+                ];
+            })
+            ->values();
+
+        return response()->json($gudangs);
+    }
+
+    public function history($stock)
+    {
+        $stock = Stock::with('supplier')->findOrFail($stock);
+
+        $gudangStocks = GudangStock::with('gudang')
+            ->where('stocks_id', $stock->id)
+            ->orderByDesc('quantity')
+            ->get();
+
+        $purchaseHistories = RincianPembelian::with(['pembelian.supplier', 'pembelian.user'])
+            ->where('stocks_id', $stock->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $salesHistories = RincianPenjualan::with(['penjualan.customer', 'penjualan.user', 'gudang'])
+            ->where('stocks_id', $stock->id)
+            ->orderByDesc('created_at')
+            ->get();
+
+        $transactionHistories = collect()
+            ->merge($purchaseHistories->map(function ($history) {
+                return [
+                    'tanggal' => $history->created_at,
+                    'jenis' => 'Pembelian',
+                    'mitra' => $history->pembelian->supplier->name ?? '-',
+                    'gudang' => $history->pembelian->gudang->name ?? '-',
+                    'qty' => $history->quantity,
+                    'harga' => $history->price,
+                    'total' => $history->total,
+                    'status' => '-',
+                ];
+            }))
+            ->merge($salesHistories->map(function ($history) {
+                return [
+                    'tanggal' => $history->created_at,
+                    'jenis' => 'Penjualan',
+                    'mitra' => $history->penjualan->customer->name ?? '-',
+                    'gudang' => $history->gudang->name ?? '-',
+                    'qty' => $history->quantity,
+                    'harga' => $history->price,
+                    'total' => $history->total,
+                    'status' => $history->penjualan->status ?? '-',
+                ];
+            }))
+            ->sortByDesc('tanggal')
+            ->values();
+
+        return view('stocks.detail', compact('stock', 'gudangStocks', 'transactionHistories'));
     }
 
     private function mapGudangs($gudangs)

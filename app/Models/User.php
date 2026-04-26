@@ -10,6 +10,10 @@ class User extends Authenticatable
 {
     use HasFactory, Notifiable;
 
+    public const LEVEL_REQUEST = 0;
+    public const LEVEL_ADMIN = 1;
+    public const LEVEL_OWNER = 2;
+
     /**
      * The attributes that are mass assignable.
      *
@@ -45,14 +49,23 @@ class User extends Authenticatable
         ];
     }
 
-    /**
-     * Check if the user has a specific role.
-     *
-     * @param  int  $role
-     * @return bool
-     */
-    public function hasRole(int $role): bool
+    public function isRequest(): bool
     {
-        return $this->role === $role;
+        return $this->level === self::LEVEL_REQUEST;
+    }
+
+    public function isAdmin(): bool
+    {
+        return $this->level === self::LEVEL_ADMIN;
+    }
+
+    public function isOwner(): bool
+    {
+        return $this->level === self::LEVEL_OWNER;
+    }
+
+    public function hasLevel(int $level): bool
+    {
+        return $this->level === $level;
     }
 }

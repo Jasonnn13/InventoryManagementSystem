@@ -1,0 +1,22 @@
+services:
+  mysql:
+    image: mysql:8.0
+    container_name: ims2-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_DATABASE: distributor_db
+      MYSQL_USER: laravel
+      MYSQL_PASSWORD: secret
+      MYSQL_ROOT_PASSWORD: rootpass
+    ports:
+      - "3307:3306"
+    volumes:
+      - ims2-mysql-data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "127.0.0.1", "-u", "laravel", "-psecret"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+volumes:
+  ims2-mysql-data:

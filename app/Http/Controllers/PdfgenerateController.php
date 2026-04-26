@@ -30,10 +30,7 @@ class PdfgenerateController extends Controller
         // Share data to view
         $pdf = PDF::loadView('rincianpenjualan.suratjalan', ['penjualan' => $penjualan]);
 
-        // // Download PDF file
-        // return $pdf->download('Surat_Jalan_'.$penjualan_id.'.pdf');
-
-        return view('rincianpenjualan.suratjalan', compact('penjualan'));
+        return $pdf->download('surat_jalan_'.$penjualan_id.'.pdf');
     }
 
 

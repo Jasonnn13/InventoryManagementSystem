@@ -1,151 +1,48 @@
-<!DOCTYPE html>
-<html lang="en">
+<x-guest-layout>
+    <div class="space-y-6">
+        <div class="space-y-2 text-center sm:text-left">
+            <h2 class="text-2xl font-semibold tracking-tight text-neutral-900 dark:text-neutral-100">Masuk</h2>
+            <p class="text-sm leading-6 text-neutral-600 dark:text-neutral-400">Masuk untuk mengelola stok, pesanan, dan persetujuan.</p>
+        </div>
 
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Login</title>
-    <style>
-        /* Your existing CSS styles */
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #1f1f1f;
-            color: #fff;
-            margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-        }
+        <x-auth-session-status class="mb-4" :status="session('status')" />
 
-        .login-container {
-            background-color: #2e2e2e;
-            padding: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
-            width: 400px;
-        }
-
-        .login-container h2 {
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        .login-container form {
-            display: flex;
-            flex-direction: column;
-        }
-
-        .login-container label {
-            margin-bottom: 5px;
-            color: #ccc;
-        }
-
-        .login-container input {
-            padding: 10px;
-            margin-bottom: 15px;
-            border: 1px solid #4caf50;
-            border-radius: 5px;
-            background-color: #3a3a3a;
-            color: #fff;
-        }
-
-        .login-container .checkbox-container {
-            display: flex;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-
-        .login-container .checkbox-container input {
-            margin-right: 10px;
-        }
-
-        .login-container .checkbox-container label {
-            margin: 0;
-        }
-
-        .login-container .buttons {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .login-container .buttons a,
-        .login-container .buttons button {
-            background-color: #4caf50;
-            color: #fff;
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            text-decoration: none;
-            text-align: center;
-            cursor: pointer;
-        }
-
-        .login-container .buttons button.logout-button {
-            background-color: #f44336;
-        }
-
-        .login-container .buttons a:hover,
-        .login-container .buttons button:hover {
-            background-color: #3a3a3a;
-        }
-
-        .login-container .forgot-password {
-            margin-top: 10px;
-            text-align: center;
-        }
-
-        .login-container .forgot-password a {
-            color: #4caf50;
-            text-decoration: none;
-        }
-
-        .error {
-            color: #f44336;
-            margin-bottom: 15px;
-            text-align: center;
-        }
-    </style>
-</head>
-
-<body>
-    <div class="login-container">
-        <h2>Login</h2>
-        
-        <!-- Display Errors -->
         @if ($errors->any())
-            <div class="error">
-                <ul>
-                    @foreach ($errors->all() as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
+            <div class="rounded-2xl border border-black/10 bg-neutral-100 p-4 dark:border-white/10 dark:bg-neutral-900">
+                <x-input-error :messages="$errors->all()" />
             </div>
         @endif
 
-        <form method="POST" action="{{ route('login') }}">
+        <form method="POST" action="{{ route('login') }}" class="space-y-5">
             @csrf
-            <label for="email">Email</label>
-            <input type="email" id="email" name="email" :value="old('email')" required autofocus autocomplete="username">
-            <label for="password">Password</label>
-            <input type="password" id="password" name="password" required autocomplete="current-password">
-            <div class="checkbox-container">
-                <input type="checkbox" id="remember_me" name="remember">
-                <label for="remember_me">Remember me</label>
+
+            <div>
+                <x-input-label for="email" value="Email" />
+                <x-text-input id="email" class="mt-2" type="email" name="email" :value="old('email')" required autofocus autocomplete="username" />
             </div>
-            <div class="buttons">
-                <a href="{{ route('register') }}">Register</a>
-                <button type="submit" class="btn btn-primary">Log in</button>
+
+            <div>
+                <x-input-label for="password" value="Password" />
+                <x-text-input id="password" class="mt-2" type="password" name="password" required autocomplete="current-password" />
+            </div>
+
+            <label for="remember_me" class="flex items-center gap-3 text-sm text-neutral-700 dark:text-neutral-300">
+                <input id="remember_me" type="checkbox" name="remember" class="h-4 w-4 rounded border-neutral-300 text-black focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-white dark:focus:ring-white">
+                <span>Ingat saya</span>
+            </label>
+
+            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+                <div class="flex flex-wrap gap-3">
+                    @if (Route::has('register'))
+                        <a href="{{ route('register') }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 shadow-sm transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Daftar</a>
+                    @endif
+                    @if (Route::has('password.request'))
+                        <a href="{{ route('password.request') }}" class="inline-flex items-center justify-center rounded-full border border-transparent px-1 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-700 underline decoration-neutral-400 underline-offset-4 transition hover:text-black dark:text-neutral-300 dark:hover:text-white">Lupa kata sandi</a>
+                    @endif
+                </div>
+
+                <x-primary-button type="submit">Masuk</x-primary-button>
             </div>
         </form>
-        <div class="forgot-password">
-            @if (Route::has('password.request'))
-            <a href="{{ route('password.request') }}">Forgot your password?</a>
-            @endif
-        </div>
     </div>
-</body>
-
-</html>
+</x-guest-layout>

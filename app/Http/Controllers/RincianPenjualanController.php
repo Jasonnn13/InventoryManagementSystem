@@ -37,78 +37,87 @@ class RincianPenjualanController extends Controller
             'items' => 'required|array',
             'items.*.name' => 'required|string|exists:stocks,name',
             'items.*.quantity' => 'required|integer|min:1',
-            'gudangs_id' => 'required|exists:gudangs,id',
+            'items.*.gudangs_id' => 'required|exists:gudangs,id',
         ]);
 
         $penjualanId = $validated['penjualan_id'];
         $items = $validated['items'];
-        $gudangId = $validated['gudangs_id'];
+        try {
+            DB::transaction(function () use ($items, $penjualanId) {
+                $preparedItems = [];
 
-        $totalAmount = 0;
-        $insufficientStockItems = [];
+                // Validate all requested items first; if any fails, rollback everything.
+                foreach ($items as $item) {
+                    $stock = Stock::where('name', $item['name'])->first();
 
-        DB::transaction(function () use ($items, $penjualanId, $gudangId, &$totalAmount, &$insufficientStockItems) {
-            foreach ($items as $item) {
-                $stock = Stock::where('name', $item['name'])->first();
-                $gudangStock = GudangStock::where('stocks_id', $stock->id)
-                                          ->where('gudangs_id', $gudangId)
-                                          ->lockForUpdate()
-                                          ->first();
+                    if (!$stock) {
+                        throw new \RuntimeException("Item {$item['name']} tidak ditemukan.");
+                    }
 
-                // Check if the warehouse stock quantity is sufficient
-                if (!$gudangStock || $gudangStock->quantity < $item['quantity']) {
-                    $insufficientStockItems[] = [
-                        'stock_name' => $stock->name,
-                        'required_quantity' => $item['quantity'],
-                        'available_quantity' => $gudangStock ? $gudangStock->quantity : 0
+                    $gudangId = $item['gudangs_id'];
+                    $gudangStock = GudangStock::where('stocks_id', $stock->id)
+                        ->where('gudangs_id', $gudangId)
+                        ->lockForUpdate()
+                        ->first();
+
+                    if (!$gudangStock || $gudangStock->quantity < $item['quantity']) {
+                        $available = $gudangStock ? $gudangStock->quantity : 0;
+                        throw new \RuntimeException("{$stock->name}: Butuh {$item['quantity']} tapi stok di gudang terpilih tinggal {$available}.");
+                    }
+
+                    $preparedItems[] = [
+                        'stock' => $stock,
+                        'gudangStock' => $gudangStock,
+                        'gudang_id' => $gudangId,
+                        'quantity' => $item['quantity'],
                     ];
-                    continue;
                 }
 
-                $price = $stock->jual;
+                foreach ($preparedItems as $prepared) {
+                    $stock = $prepared['stock'];
+                    $gudangStock = $prepared['gudangStock'];
+                    $quantity = $prepared['quantity'];
+                    $price = $stock->jual;
 
-                // Create RincianPenjualan record
-                RincianPenjualan::create([
-                    'penjualan_id' => $penjualanId,
-                    'stocks_id' => $stock->id,
-                    'gudangs_id' => $gudangId,
-                    'quantity' => $item['quantity'],
-                    'price' => $price,
-                    'total' => $price * $item['quantity'],
-                ]);
+                    RincianPenjualan::create([
+                        'penjualan_id' => $penjualanId,
+                        'stocks_id' => $stock->id,
+                        'gudangs_id' => $prepared['gudang_id'],
+                        'quantity' => $quantity,
+                        'price' => $price,
+                        'total' => $price * $quantity,
+                    ]);
 
-                // Decrement GudangStock quantity
-                $gudangStock->decrement('quantity', $item['quantity']);
-                $gudangStock->save();
+                    $gudangStock->decrement('quantity', $quantity);
+                    $gudangStock->save();
 
-                // Update the stock table with the total stock quantity across all warehouses
-                $stock->stock = GudangStock::where('stocks_id', $stock->id)->sum('quantity');
-                $stock->save();
+                    $stock->stock = GudangStock::where('stocks_id', $stock->id)->sum('quantity');
+                    $stock->save();
+                }
 
-                $totalAmount += $item['quantity'] * $price;
-            }
-        });
+                $penjualan = Penjualan::findOrFail($penjualanId);
+                $totalAmount = RincianPenjualan::where('penjualan_id', $penjualanId)->sum('total');
 
-        // Handle insufficient stock items
-        if (!empty($insufficientStockItems)) {
-            $errorMessages = [];
-            foreach ($insufficientStockItems as $item) {
-                $errorMessages[] = "{$item['stock_name']}: Required {$item['required_quantity']} but only {$item['available_quantity']} available in the selected warehouse.";
-            }
-            return redirect()->back()->withErrors(['items' => $errorMessages])->withInput();
+                $penjualan->total = $totalAmount;
+                $penjualan->total_netto = $totalAmount - (($penjualan->diskon / 100) * $totalAmount);
+
+                if ($penjualan->tipe_ppn === 'PPN') {
+                    $dpp = $penjualan->total_netto / 1.11;
+                    $ppn = $penjualan->total_netto - $dpp;
+                } else {
+                    $dpp = $penjualan->total_netto;
+                    $ppn = 0;
+                }
+
+                $penjualan->dpp = $dpp;
+                $penjualan->ppn = $ppn;
+                $penjualan->save();
+            });
+        } catch (\RuntimeException $e) {
+            return redirect()->back()->withErrors(['items' => [$e->getMessage()]])->withInput();
         }
 
-        // Update the total for the penjualan
-        $penjualan = Penjualan::findOrFail($penjualanId);
-        $penjualan->total = $totalAmount;
-        $penjualan->total_netto = $totalAmount - (($penjualan->diskon / 100) * $totalAmount);
-        $dpp = $penjualan->total_netto / 1.11;
-        $ppn = $penjualan->total_netto - $dpp;
-        $penjualan->dpp = $dpp;
-        $penjualan->ppn = $ppn;
-        $penjualan->save();
-
-        return redirect()->route('penjualan.index')->with('success', 'Items added and updated successfully');
+        return redirect('/penjualan')->with('success', 'Items added and updated successfully');
     }
 
     public function edit($id)
@@ -138,78 +147,90 @@ class RincianPenjualanController extends Controller
         $newGudangId = $validated['gudangs_id'];
         $price = $stock->jual;
 
-        $insufficientStockItems = [];
+        $errorMessage = null;
 
-            DB::transaction(function () use ($rincianpenjualan, $stock, $oldQuantity, $newQuantity, $newGudangId, $price, $penjualan) {
-                $newGudangStock = GudangStock::where('stocks_id', $stock->id)
-                                             ->where('gudangs_id', $newGudangId)
-                                             ->lockForUpdate()
-                                             ->firstOrFail();
+        DB::transaction(function () use (
+            $rincianpenjualan,
+            $stock,
+            $oldQuantity,
+            $newQuantity,
+            $newGudangId,
+            $price,
+            $penjualan,
+            &$errorMessage
+        ) {
+            $newGudangStock = GudangStock::where('stocks_id', $stock->id)
+                ->where('gudangs_id', $newGudangId)
+                ->lockForUpdate()
+                ->first();
 
-                if (!$gudangStock || $gudangStock->quantity < $item['quantity']) {
-                $insufficientStockItems[] = [
-                    'stock_name' => $stock->name,
-                    'required_quantity' => $item['quantity'],
-                    'available_quantity' => $gudangStock ? $gudangStock->quantity : 0
-                    ];
+            if (!$newGudangStock) {
+                $errorMessage = "{$stock->name}: Stok tidak tersedia di gudang yang dipilih.";
+                return;
+            }
+
+            if ($rincianpenjualan->gudangs_id != $newGudangId) {
+                $availableQuantity = $newGudangStock->quantity;
+
+                if ($availableQuantity < $newQuantity) {
+                    $errorMessage = "{$stock->name}: Butuh {$newQuantity} tapi stok di gudang terpilih tinggal {$availableQuantity}.";
+                    return;
                 }
 
-                if ($rincianpenjualan->gudangs_id != $newGudangId) {
-                    // Restore stock to the old warehouse
-                    $oldGudangStock = GudangStock::where('stocks_id', $stock->id)
-                                                 ->where('gudangs_id', $rincianpenjualan->gudangs_id)
-                                                 ->lockForUpdate()
-                                                 ->firstOrFail();
+                $oldGudangStock = GudangStock::where('stocks_id', $stock->id)
+                    ->where('gudangs_id', $rincianpenjualan->gudangs_id)
+                    ->lockForUpdate()
+                    ->first();
+
+                if ($oldGudangStock) {
                     $oldGudangStock->increment('quantity', $oldQuantity);
                     $oldGudangStock->save();
-
-                    // Deduct stock from the new warehouse
-                    $newGudangStock->decrement('quantity', $newQuantity);
-                    $newGudangStock->save();
-
-                    // Update `gudangs_id` in RincianPenjualan
-                    $rincianpenjualan->gudangs_id = $newGudangId;
-                } else {
-                    // Corrected logic: calculate the difference between the old and new quantity
-                    $quantityDifference = $newQuantity - $oldQuantity;
-
-                    // Adjust stock based on quantity difference
-                    if ($quantityDifference > 0) {
-                        $newGudangStock->decrement('quantity', $quantityDifference);
-                    } else if ($quantityDifference < 0) {
-                        $newGudangStock->increment('quantity', abs($quantityDifference));
-                    }
-
-                    $newGudangStock->save();
                 }
 
-                // Update RincianPenjualan record
-                $rincianpenjualan->quantity = $newQuantity;
-                $rincianpenjualan->price = $price;
-                $rincianpenjualan->total = $newQuantity * $price;
-                $rincianpenjualan->save();
+                $newGudangStock->decrement('quantity', $newQuantity);
+                $newGudangStock->save();
 
-                // Recalculate and update the total stock across all warehouses
-                $stock->stock = GudangStock::where('stocks_id', $stock->id)->sum('quantity');
-                $stock->save();
+                $rincianpenjualan->gudangs_id = $newGudangId;
+            } else {
+                $quantityDifference = $newQuantity - $oldQuantity;
 
-                // Recalculate totals for Penjualan
-                $penjualan->total = $penjualan->rincianpenjualans()->sum('total');
-                $penjualan->total_netto = $penjualan->total - (($penjualan->diskon / 100) * $penjualan->total);
+                if ($quantityDifference > 0) {
+                    if ($newGudangStock->quantity < $quantityDifference) {
+                        $errorMessage = "{$stock->name}: Butuh {$newQuantity} tapi stok di gudang terpilih tinggal {$newGudangStock->quantity}.";
+                        return;
+                    }
+                    $newGudangStock->decrement('quantity', $quantityDifference);
+                } elseif ($quantityDifference < 0) {
+                    $newGudangStock->increment('quantity', abs($quantityDifference));
+                }
+
+                $newGudangStock->save();
+            }
+
+            $rincianpenjualan->quantity = $newQuantity;
+            $rincianpenjualan->price = $price;
+            $rincianpenjualan->total = $newQuantity * $price;
+            $rincianpenjualan->save();
+
+            $stock->stock = GudangStock::where('stocks_id', $stock->id)->sum('quantity');
+            $stock->save();
+
+            $penjualan->total = $penjualan->rincianpenjualans()->sum('total');
+            $penjualan->total_netto = $penjualan->total - (($penjualan->diskon / 100) * $penjualan->total);
+            if ($penjualan->tipe_ppn === 'PPN') {
                 $dpp = $penjualan->total_netto / 1.11;
                 $ppn = $penjualan->total_netto - $dpp;
-                $penjualan->dpp = $dpp;
-                $penjualan->ppn = $ppn;
-                $penjualan->save();
-            });
-
-            // Handle insufficient stock items
-        if (!empty($insufficientStockItems)) {
-            $errorMessages = [];
-            foreach ($insufficientStockItems as $item) {
-                $errorMessages[] = "{$item['stock_name']}: Required {$item['required_quantity']} but only {$item['available_quantity']} available in the selected warehouse.";
+            } else {
+                $dpp = $penjualan->total_netto;
+                $ppn = 0;
             }
-            return redirect()->back()->withErrors(['items' => $errorMessages])->withInput();
+            $penjualan->dpp = $dpp;
+            $penjualan->ppn = $ppn;
+            $penjualan->save();
+        });
+
+        if ($errorMessage) {
+            return redirect()->back()->withErrors(['items' => [$errorMessage]])->withInput();
         }
 
 
@@ -239,8 +260,13 @@ class RincianPenjualanController extends Controller
         $penjualan = Penjualan::findOrFail($rincianpenjualan->penjualan_id);
         $penjualan->total = $penjualan->rincianpenjualans()->sum('total');
         $penjualan->total_netto = $penjualan->total - (($penjualan->diskon / 100) * $penjualan->total);
-        $dpp = $penjualan->total_netto / 1.11;
-        $ppn = $penjualan->total_netto - $dpp;
+        if ($penjualan->tipe_ppn === 'PPN') {
+            $dpp = $penjualan->total_netto / 1.11;
+            $ppn = $penjualan->total_netto - $dpp;
+        } else {
+            $dpp = $penjualan->total_netto;
+            $ppn = 0;
+        }
         $penjualan->dpp = $dpp;
         $penjualan->ppn = $ppn;
         $penjualan->save();

@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Customer;
+use App\Models\Supplier;
 use Illuminate\Http\Request;
 
 class CustomersController extends Controller
@@ -10,17 +11,37 @@ class CustomersController extends Controller
     public function index(Request $request)
     {
         $search = $request->input('search');
+        $type = $request->input('type', 'customer'); // Default to customer
 
-        // Fetch customers based on search input
-        $customers = Customer::query()
-            ->when($search, function ($query, $search) {
-                return $query->where('name', 'like', "%{$search}%")
-                             ->orWhere('contact_information', 'like', "%{$search}%");
-            })
-            ->orderBy('created_at', 'desc') // Order by newest created_at
-            ->paginate(10);
+        if ($type === 'supplier') {
+            // Fetch suppliers only
+            $data = Supplier::query()
+                ->when($search, function ($query, $search) {
+                    return $query->where('name', 'like', "%{$search}%")
+                                 ->orWhere('contact_information', 'like', "%{$search}%");
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
+            
+            $partners = $data;
+            $pageTitle = 'Supplier';
+            $emptyMessage = 'Belum ada supplier.';
+        } else {
+            // Fetch customers by default
+            $data = Customer::query()
+                ->when($search, function ($query, $search) {
+                    return $query->where('name', 'like', "%{$search}%")
+                                 ->orWhere('contact_information', 'like', "%{$search}%");
+                })
+                ->orderBy('created_at', 'desc')
+                ->paginate(10);
+            
+            $partners = $data;
+            $pageTitle = 'Pelanggan';
+            $emptyMessage = 'Belum ada pelanggan.';
+        }
 
-        return view('customers.index', compact('customers', 'search'));
+        return view('customers.index', compact('partners', 'search', 'type', 'pageTitle', 'emptyMessage'));
     }
 
     public function create()

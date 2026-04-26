@@ -1,430 +1,173 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Add Items to Pembelian</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 0;
-            padding: 0;
-            color: #fff;
-            background-color: #1f1f1f;
-        }
-        .container {
-            display: flex;
-            height: 100vh;
-        }
-        .sidebar {
-            width: 250px;
-            background-color: #2c2c2c;
-            padding: 20px;
-        }
-        .logo {
-            text-align: center;
-            margin-bottom: 20px;
-        }
-        .logo img {
-            width: 100px;
-        }
-        .menu {
-            list-style-type: none;
-            padding: 0;
-        }
-        .menu ul {
-            list-style-type: none;
-            padding: 0;
-        }
-        .menu li {
-            margin: 10px 0;
-        }
-        .menu li a {
-            color: #fff;
-            text-decoration: none;
-            display: block;
-            padding: 10px;
-            border-radius: 5px;
-        }
-        .menu li a:hover,
-        .menu li a:focus {
-            background-color: #3a3a3a;
-        }
-        .menu li a.active {
-            background-color: #4caf50;
-        }
-        .menu li ul {
-            display: none;
-            padding-left: 20px;
-        }
-        .menu li:hover ul,
-        .menu li:focus ul {
-            display: block;
-        }
-        .main-content {
-            flex-grow: 1;
-            background-color: #2e2e2e;
-            padding: 20px;
-        }
-        .header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 20px;
-        }
-        .header h1 {
-            margin: 0;
-        }
-        .hamburger {
-            display: none; /* Hide by default on larger screens */
-            font-size: 1.5em;
-            cursor: pointer;
-            background: none;
-            border: none;
-            color: #fff;
-        }
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-        .logout-button {
-            background-color: #f44336;
-            color: #fff;
-            border: none;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .content {
-            background-color: #3c3c3c;
-            padding: 20px;
-            border-radius: 5px;
-        }
-        .form-group {
-            margin-bottom: 15px;
-        }
-        .form-group label {
-            display: block;
-            margin-bottom: 5px;
-        }
-        .form-group input, .form-group select {
-            width: 100%;
-            padding: 10px;
-            border: 1px solid #5a5a5a;
-            border-radius: 5px;
-            background-color: #2c2c2c;
-            color: #fff;
-        }
-        .form-actions {
-            display: flex;
-            justify-content: flex-start;
-            gap: 10px;
-        }
-        .btn {
-            padding: 10px 20px;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .btn-primary {
-            background-color: #4caf50;
-            color: #fff;
-        }
-        .btn-secondary {
-            background-color: #f44336;
-            color: #fff;
-        }
-        .item {
-            margin-bottom: 20px;
-            padding: 10px;
-            background-color: #3c3c3c;
-            border-radius: 5px;
-            position: relative;
-        }
-        .item .form-group {
-            margin-bottom: 10px;
-        }
-        .delete-button {
-            position: relative;
-            top: 10px;
-            background-color: #f44336;
-            color: #fff;
-            border: none;
-            padding: 5px 10px;
-            border-radius: 5px;
-            cursor: pointer;
-        }
-        .hidden {
-            display: none;
-        }
-        .warning {
-            color: #f44336;
-            margin-top: 10px;
-            display: none;
-        }
-        /* Custom CSS for the autocomplete suggestion box */
-        .ui-autocomplete {
-            background-color: #2e2e2e !important; /* Matches the body background color */
-            color: #3a3a3a !important;
-            border: 1px solid #5a5a5a !important;
-            z-index: 1000 !important;
-            border-radius: 5px !important;
-        }
+<x-app-layout>
+    <x-slot name="header">
+        <div class="flex flex-col gap-2 sm:flex-row sm:items-end sm:justify-between">
+            <div>
+                <h2 class="app-page-title">Tambah item pembelian</h2>
+            </div>
+            <a href="{{ route('rincianpembelian.index', $pembelian->id) }}" class="text-sm font-medium text-neutral-900 underline decoration-neutral-400 underline-offset-4 dark:text-neutral-100">Kembali ke daftar</a>
+        </div>
+    </x-slot>
 
-        /* Customize the individual item styles */
-        .ui-menu-item {
-            padding: 10px !important;
-            font-size: 14px !important;
-            background-color: #2e2e2e !important; /* Matches the suggestion box background */
-            border-bottom: 1px solid #5a5a5a !important;
-            color: #3a3a3a !important;
-        }
+    <div class="space-y-6">
+        <section class="app-panel p-6">
+            <form action="{{ route('rincianpembelian.store') }}" method="POST" class="space-y-6">
+                @csrf
+                <input type="hidden" name="pembelian_id" value="{{ $pembelian->id }}">
+                <input type="hidden" name="supplier_id" value="{{ $pembelian->suppliers_id }}">
 
-        /* Target the item wrapper directly for hover and active states */
-        .ui-menu-item:hover > .ui-menu-item-wrapper,
-        .ui-menu-item.ui-state-active > .ui-menu-item-wrapper,
-        .ui-menu-item.ui-state-focus > .ui-menu-item-wrapper {
-            background-color: #3a3a3a !important; /* Slightly lighter gray for the active item */
-            color: #3a3a3a !important; /* Ensure text color remains white */
-            border: none !important;
-        }
-
-        /* Ensure the font color is white */
-        .ui-menu-item .ui-menu-item-wrapper {
-            color: #ffffff !important;
-            font-family: 'Arial', sans-serif !important;
-        }
-
-        /* Hide the default focus border */
-        .ui-helper-hidden-accessible {
-            display: none !important;
-        }
-        .ui-helper-hidden-accessible{
-            background-color: #3a3a3a !important; /* Slightly lighter gray for the active item */
-            color: #3a3a3a !important; /* Ensure text color remains white */
-        }
-        @media (max-width: 480px) {
-            .hamburger {
-                display: block; /* Show hamburger on small screens */
-            }
-
-            .sidebar {
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 250px;
-                height: 100%;
-                z-index: 1000;
-                overflow-x: hidden;
-                background-color: #2c2c2c;
-                padding: 20px;
-                transform: translateX(-100%);
-                transition: transform 0.3s ease;
-            }
-
-            .sidebar.show {
-                transform: translateX(0);
-            }
-
-            .backdrop {
-                display: none; /* Hide by default */
-                position: fixed;
-                top: 0;
-                left: 0;
-                width: 100%;
-                height: 100%;
-                background-color: rgba(0, 0, 0, 0.5); /* Semi-transparent black */
-                z-index: 900; /* Behind sidebar but above content */
-                transition: opacity 0.3s ease;
-            }
-
-            .backdrop.show {
-                display: block;
-            }
-
-            .menu-toggle {
-                display: block;
-                background-color: #4caf50;
-                color: #fff;
-                padding: 10px;
-                cursor: pointer;
-                border: none;
-                border-radius: 5px;
-                margin: 10px;
-            }
-
-            .header {
-                padding: 10px;
-                align-items: center;
-                justify-content: space-between;
-            }
-
-            .header h1 {
-                font-size: 1.5em;
-                align-self: center;
-                text-align: center;
-            }
-
-            .main-content {
-                padding: 10px; /* Reduce padding for smaller screens */
-                margin-left: 0; /* No left margin on small screens */
-            }
-
-            .user-name {
-                display: none; /* Hide user-name on small screens */
-            }
-        }
-    </style>
-    <!-- jQuery and jQuery UI -->
-    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
-    <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
-    <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css">
-</head>
-<body>
-    <div class="container">
-        <aside class="sidebar">
-            <nav class="menu">
-                <ul>
-                    <li><a href="/dashboard">Dashboard</a></li>
-                    <li><a href="/stocks">Stocks</a></li>
-                    <li><a href="/pembelian" class="active">Pembelian</a></li>
-                    <li><a href="/penjualan">Penjualan</a></li>
-                    <li><a href="/suppliers">Suppliers</a></li>
-                    <li><a href="/customers">Customers</a></li>
-                </ul>
-            </nav>
-        </aside>
-        <div class="backdrop" id="backdrop" onclick="toggleSidebar()"></div>
-        <main class="main-content">
-            <header class="header">
-                <button class="hamburger" onclick="toggleSidebar()">☰</button>
-                <h1>Add Items to Pembelian</h1>
-                <div class="user-info">
-                    <span class="user-name">{{ Auth::user()->name }}</span>
-                    <button class="logout-button" onclick="document.getElementById('logout-form').submit();">Logout</button>
+                <div class="flex flex-wrap gap-3">
+                    <x-primary-button type="button" onclick="addNewItem()">Tambah item baru</x-primary-button>
+                    <x-primary-button type="button" onclick="addExistingItems()">Tambah item lama</x-primary-button>
+                    <x-primary-button type="submit">Simpan item</x-primary-button>
                 </div>
-                <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
-                    @csrf
-                </form>
-            </header>
-            <section class="content">
-                <h2>Select Items to Add</h2>
-                <form action="{{ route('rincianpembelian.store') }}" method="POST">
-                    @csrf
-                    <input type="hidden" name="pembelian_id" value="{{ $pembelian->id }}">
-                    <input type="hidden" name="supplier_id" value="{{ $pembelian->suppliers_id }}">
 
-                    <div class="form-actions">
-                        <button type="button" class="btn btn-primary" onclick="addNewItem()">Add New Item</button>
-                        <button type="button" class="btn btn-primary" onclick="addExistingItems()">Add Existing Items</button>
-                        <button type="submit" class="btn btn-primary">Save Items</button>
-                    </div>
-
-                    <div id="items-container" class="hidden">
-                        
-                    </div>
-
-                    <div id="new-items-container" class="hidden">
-
-                    </div>
-                </form>
-            </section>
-        </main>
+                <div id="items-container" class="space-y-4"></div>
+                <div id="new-items-container" class="space-y-4"></div>
+            </form>
+        </section>
     </div>
 
-    <script>
+    @push('scripts')
+        <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.13.2/jquery-ui.min.js"></script>
+        <link rel="stylesheet" href="https://code.jquery.com/ui/1.13.2/themes/smoothness/jquery-ui.css">
+        <script>
+            let existingItemsAdded = 0;
+            let newItemIndex = 0;
 
-        function toggleSidebar() {
-            const sidebar = document.querySelector('.sidebar');
-            const backdrop = document.getElementById('backdrop');
-            sidebar.classList.toggle('show');
-            backdrop.classList.toggle('show');
-        }
-        let existingItemsAdded = 0;
-        let newItemIndex = 0;
-
-        function addNewItem() {
-            const container = document.getElementById('new-items-container');
-            container.classList.remove('hidden');
-
-            const newItemHTML = `
-                <div class="item">
-                    <h3>New Items</h3>
-                    <div class="form-group">
-                        <label for="new-item-name-${newItemIndex}">Item Name</label>
-                        <input type="text" id="new-item-name-${newItemIndex}" name="items[new][${newItemIndex}][name]" placeholder="Enter new item name" required>
+            function addNewItem() {
+                const container = document.getElementById('new-items-container');
+                const block = `
+                    <div class="app-card p-5">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h3 class="text-base font-semibold">Item baru</h3>
+                            <button type="button" class="rounded-full border border-neutral-300 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 hover:border-black hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900" onclick="removeItem(this)">Hapus</button>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300" for="new-item-name-${newItemIndex}">Nama item</label>
+                                <input class="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white" type="text" id="new-item-name-${newItemIndex}" name="items[new][${newItemIndex}][name]" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300" for="new-item-quantity-${newItemIndex}">Jumlah</label>
+                                <input class="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white" type="number" min="1" id="new-item-quantity-${newItemIndex}" name="items[new][${newItemIndex}][quantity]" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300" for="new-item-price-${newItemIndex}">Harga (Rp.)</label>
+                                <input class="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white price-input" type="text" inputmode="numeric" id="new-item-price-${newItemIndex}" name="items[new][${newItemIndex}][price]" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300" for="kode-${newItemIndex}">Kode</label>
+                                <input class="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white" type="text" id="kode-${newItemIndex}" name="items[new][${newItemIndex}][kode]" required>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="new-item-quantity-${newItemIndex}">Quantity</label>
-                        <input type="number" id="new-item-quantity-${newItemIndex}" name="items[new][${newItemIndex}][quantity]" min="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="new-item-price-${newItemIndex}">Price</label>
-                        <input type="number" id="new-item-price-${newItemIndex}" name="items[new][${newItemIndex}][price]" step="0.01" min="0" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="kode-${newItemIndex}">Kode</label>
-                        <input type="text" id="kode-${newItemIndex}" name="items[new][${newItemIndex}][kode]" class="form-control" placeholder="Enter new item kode" required>
-                    </div>
-                    <button type="button" class="delete-button" onclick="removeItem(this)">Delete</button>
-                </div>
-            `;
+                `;
 
-            container.insertAdjacentHTML('beforeend', newItemHTML);
-            newItemIndex++;
-        }
+                container.insertAdjacentHTML('beforeend', block);
+                newItemIndex += 1;
+            }
 
-        function addExistingItems() {
-            const container = document.getElementById('items-container');
-            container.classList.remove('hidden');
-
-            const existingItemsHTML = `
-                <div class="item">
-                    <h3>Existing Items</h3>
-                    <div class="form-group">
-                        <label for="stock-input-${existingItemsAdded}">Select Existing Item</label>
-                        <input type="text" id="stock-input-${existingItemsAdded}" name="items[existing][${existingItemsAdded}][name]" class="form-control" placeholder="Enter item name" required>
+            function addExistingItems() {
+                const container = document.getElementById('items-container');
+                const block = `
+                    <div class="app-card p-5">
+                        <div class="mb-4 flex items-center justify-between">
+                            <h3 class="text-base font-semibold">Item yang sudah ada</h3>
+                            <button type="button" class="rounded-full border border-neutral-300 px-3 py-1 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 hover:border-black hover:bg-neutral-50 dark:border-neutral-700 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900" onclick="removeItem(this)">Hapus</button>
+                        </div>
+                        <div class="grid gap-4 sm:grid-cols-2">
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300" for="stock-input-${existingItemsAdded}">Pilih item yang sudah ada</label>
+                                <input class="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white" type="text" id="stock-input-${existingItemsAdded}" name="items[existing][${existingItemsAdded}][name]" placeholder="Masukkan nama item" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300" for="quantity-${existingItemsAdded}">Jumlah</label>
+                                <input class="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white" type="number" min="1" id="quantity-${existingItemsAdded}" name="items[existing][${existingItemsAdded}][quantity]" required>
+                            </div>
+                            <div>
+                                <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300" for="price-${existingItemsAdded}">Harga (Rp.)</label>
+                                <input class="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white price-input" type="text" inputmode="numeric" id="price-${existingItemsAdded}" name="items[existing][${existingItemsAdded}][price]" required>
+                            </div>
+                        </div>
                     </div>
-                    <div class="form-group">
-                        <label for="quantity-${existingItemsAdded}">Quantity</label>
-                        <input type="number" id="quantity-${existingItemsAdded}" name="items[existing][${existingItemsAdded}][quantity]" min="1" required>
-                    </div>
-                    <div class="form-group">
-                        <label for="price-${existingItemsAdded}">Price</label>
-                        <input type="number" id="price-${existingItemsAdded}" name="items[existing][${existingItemsAdded}][price]" step="0.01" min="0" required>
-                    </div>
-                    <button type="button" class="delete-button" onclick="removeItem(this)">Delete</button>
-                </div>
+                `;
 
-            `;
+                container.insertAdjacentHTML('beforeend', block);
+                const currentIndex = existingItemsAdded;
+                existingItemsAdded += 1;
 
-            container.insertAdjacentHTML('beforeend', existingItemsHTML);
-            existingItemsAdded++;
+                $(`#stock-input-${currentIndex}`).autocomplete({
+                    source: function (request, response) {
+                        $.ajax({
+                            url: '/stocks/autocomplete',
+                            dataType: 'json',
+                            data: { term: request.term },
+                            success: function (data) {
+                                response(data);
+                            },
+                        });
+                    },
+                    select: function (event, ui) {
+                        $(this).val(ui.item.label);
 
-            // Initialize autocomplete for the newly added input
-            $(`#stock-input-${existingItemsAdded - 1}`).autocomplete({
-                source: function(request, response) {
-                    $.ajax({
-                        url: '/stocks/autocomplete',
-                        dataType: 'json',
-                        data: {
-                            term: request.term
-                        },
-                        success: function(data) {
-                            response(data);
+                        const priceInput = document.getElementById(`price-${currentIndex}`);
+                        if (priceInput) {
+                            const formattedPrice = formatIDR(String(ui.item.price || 0));
+                            priceInput.placeholder = formattedPrice ? `Harga beli sekarang: ${formattedPrice}` : 'Masukkan harga';
                         }
-                    });
-                },
-                select: function(event, ui) {
-                    $(this).val(ui.item.label); 
+                    },
+                });
+            }
+
+            function removeItem(button) {
+                button.closest('.app-card').remove();
+            }
+
+            // Format currency as IDR
+            function formatIDR(value) {
+                if (!value) return '';
+                const num = value.replace(/\D/g, '');
+                if (!num) return '';
+                return new Intl.NumberFormat('id-ID').format(num);
+            }
+
+            // Get numeric value from formatted input
+            function getNumericValue(formattedValue) {
+                return formattedValue.replace(/\D/g, '');
+            }
+
+            // Add event listeners to price inputs
+            document.addEventListener('input', function(e) {
+                if (e.target.classList.contains('price-input')) {
+                    const input = e.target;
+                    const cursorPos = input.selectionStart;
+                    const oldLength = input.value.length;
+                    
+                    // Get numeric value and format it
+                    const numericValue = getNumericValue(input.value);
+                    const formattedValue = formatIDR(input.value);
+                    
+                    // Update display
+                    input.value = formattedValue;
+                    
+                    // Store actual numeric value in a data attribute
+                    input.setAttribute('data-value', numericValue);
+                    
+                    // Adjust cursor position
+                    const newLength = input.value.length;
+                    const diff = newLength - oldLength;
+                    input.setSelectionRange(cursorPos + diff, cursorPos + diff);
                 }
             });
-        }
 
-        function removeItem(button) {
-            button.parentElement.remove();
-        }
-    </script>
-</body>
-</html>
+            // Before form submission, restore numeric values
+            document.querySelector('form').addEventListener('submit', function(e) {
+                document.querySelectorAll('.price-input').forEach(input => {
+                    const numericValue = getNumericValue(input.value);
+                    input.value = numericValue;
+                });
+            });
+        </script>
+    @endpush
+</x-app-layout>

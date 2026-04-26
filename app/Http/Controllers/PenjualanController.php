@@ -64,7 +64,8 @@ class PenjualanController extends Controller
         $validated = $request->validate([
             'customers_id' => 'required|exists:customers,id',
             'status' => 'required|string',
-            'tipe' => 'required|string',
+            'tipe' => 'required|in:Cash,Piutang',
+            'tipe_ppn' => 'required|in:PPN,Non PPN',
             'sales' => 'required|string',
             'tenggat_waktu' => 'required|date',
             'diskon' => 'nullable|integer|between:0,100', // Allow nullable values if not provided
@@ -87,6 +88,7 @@ class PenjualanController extends Controller
             'dpp' => 0, // dpp will be updated later
             'total_netto' => 0, 
             'diskon' => $validated['diskon'], 
+            'tipe_ppn' => $validated['tipe_ppn'],
         ]);
 
         
@@ -111,7 +113,8 @@ class PenjualanController extends Controller
         $validated = $request->validate([
             'customers_id' => 'required|exists:customers,id',
             'status' => 'required|string',
-            'tipe' => 'required|string',
+            'tipe' => 'required|in:Cash,Piutang',
+            'tipe_ppn' => 'required|in:PPN,Non PPN',
             'sales' => 'required|string',
             'tenggat_waktu' => 'required|date',
             'diskon' => 'nullable|integer|between:0,100', // Allow nullable values if not provided
@@ -122,6 +125,7 @@ class PenjualanController extends Controller
             'customers_id' => $validated['customers_id'],
             'status' => $validated['status'],
             'tipe' => $validated['tipe'],
+            'tipe_ppn' => $validated['tipe_ppn'],
             'sales' => $validated['sales'],
             'tenggat_waktu' => $validated['tenggat_waktu'],
             'diskon' => $validated['diskon'], // Assign the validated diskon value
@@ -129,8 +133,13 @@ class PenjualanController extends Controller
 
         $penjualan = Penjualan::find($penjualan->id);
         $penjualan->total_netto = $penjualan->total - (($penjualan->diskon/100) * $penjualan->total);
-        $dpp = $penjualan->total_netto / 1.11;
-        $ppn = $penjualan->total_netto - $dpp;
+        if ($penjualan->tipe_ppn === 'PPN') {
+            $dpp = $penjualan->total_netto / 1.11;
+            $ppn = $penjualan->total_netto - $dpp;
+        } else {
+            $dpp = $penjualan->total_netto;
+            $ppn = 0;
+        }
         $penjualan->dpp = $dpp;
         $penjualan->ppn = $ppn;
         $penjualan->save();

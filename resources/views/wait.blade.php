@@ -1,97 +1,96 @@
 <!DOCTYPE html>
 <html lang="en">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Waiting Page</title>
+    <title>Waiting for Approval</title>
     <style>
+        :root {
+            color-scheme: dark;
+        }
+
         body {
-            font-family: Arial, sans-serif;
-            background-color: #1f1f1f;
-            color: white;
             margin: 0;
-            padding: 0;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            overflow: hidden; /* Ensure no scroll bars appear */
+            min-height: 100vh;
+            display: grid;
+            place-items: center;
+            background:
+                radial-gradient(circle at top, rgba(255, 255, 255, 0.08), transparent 40%),
+                linear-gradient(180deg, #0a0a0a, #171717 50%, #0f0f0f);
+            color: #f5f5f5;
+            font-family: Arial, sans-serif;
         }
 
-        .header {
-            width: 100%;
-            padding: 10px;
-            background-color: #333;
-            color: white;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            position: absolute;
-            top: 0;
-        }
-
-        .user-info {
-            display: flex;
-            align-items: center;
-            gap: 10px;
-        }
-
-        .logout-button {
-            background-color: red;
-            color: white;
-            border: none;
-            padding: 5px 10px;
-            cursor: pointer;
-            border-radius: 5px;
-        }
-
-        .logout-button:hover {
-            background-color: red;
-        }
-
-        .waiting-container {
+        .card {
+            width: min(92vw, 440px);
+            border: 1px solid rgba(255, 255, 255, 0.14);
+            border-radius: 24px;
+            background: rgba(18, 18, 18, 0.88);
+            box-shadow: 0 30px 90px rgba(0, 0, 0, 0.45);
+            padding: 32px;
             text-align: center;
-            margin-top: 60px; /* Adjust margin to avoid overlap with header */
+            backdrop-filter: blur(12px);
         }
 
         .spinner {
-            border: 8px solid #f3f3f3;
-            border-top: 8px solid #3498db;
-            border-radius: 50%;
-            width: 50px;
-            height: 50px;
+            width: 56px;
+            height: 56px;
+            margin: 0 auto 20px;
+            border-radius: 9999px;
+            border: 4px solid rgba(255, 255, 255, 0.16);
+            border-top-color: #ffffff;
             animation: spin 1s linear infinite;
-            margin: 0 auto;
         }
 
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
+        h1 {
+            margin: 0 0 10px;
+            font-size: 1.5rem;
         }
 
         p {
-            margin-top: 15px;
-            font-size: 18px;
-            color: white; /* Corrected color */
+            margin: 0;
+            color: rgba(255, 255, 255, 0.72);
+            line-height: 1.6;
+        }
+
+        .meta {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            align-items: center;
+            font-size: 0.9rem;
+        }
+
+        .logout-button {
+            border: 1px solid rgba(255, 255, 255, 0.16);
+            background: #fff;
+            color: #111;
+            border-radius: 9999px;
+            padding: 10px 16px;
+            font-weight: 700;
+            cursor: pointer;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
         }
     </style>
 </head>
-
 <body>
-    <header class="header">
-        <div class="user-info">
+    <div class="card">
+        <div class="spinner"></div>
+        <h1>Menunggu verifikasi admin</h1>
+        <p>Akun Anda aktif, tetapi akses masih menunggu persetujuan.</p>
+        <div class="meta">
             <span>{{ Auth::user()->name }}</span>
-            <button class="logout-button" onclick="document.getElementById('logout-form').submit();">Logout</button>
+            <button class="logout-button" onclick="document.getElementById('logout-form').submit();">Keluar</button>
         </div>
-        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display: none;">
+        <form id="logout-form" action="{{ route('logout') }}" method="POST" style="display:none;">
             @csrf
         </form>
-    </header>
-
-    <div class="waiting-container">
-        <div class="spinner"></div>
-        <p>Please wait for admin verification...</p>
     </div>
 </body>
 </html>

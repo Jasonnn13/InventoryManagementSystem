@@ -2,22 +2,39 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use App\Models\User;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LevelController extends Controller
 {
 
     public function index()
     {
-        // Query users based on their level
-        $nol = User::where('level', 0)->get(); 
-        $satu = User::where('level', 1)->get();
-        $dua = User::where('level', 2)->get();
-   
+        $requests = User::where('level', User::LEVEL_REQUEST)->orderBy('name')->get();
+        $admins = User::where('level', User::LEVEL_ADMIN)->orderBy('name')->get();
+        $owners = User::where('level', User::LEVEL_OWNER)->orderBy('name')->get();
 
-        // Pass the variables to the view
-        return view('level.index', compact('nol', 'satu', 'dua'));
+        return view('level.index', compact('requests', 'admins', 'owners'));
+    }
+
+    /**
+     * Users are created via the registration page only.
+     * This stub prevents a 500 error when /level/create is accessed directly.
+     */
+    public function create()
+    {
+        return redirect()->route('level.index')
+            ->with('error', 'Pengguna baru dibuat melalui halaman registrasi.');
+    }
+
+    /**
+     * Stub for POST /level — not used; users register themselves.
+     */
+    public function store(Request $request)
+    {
+        return redirect()->route('level.index')
+            ->with('error', 'Pengguna baru dibuat melalui halaman registrasi.');
     }
 
 
@@ -29,10 +46,11 @@ class LevelController extends Controller
      */
     public function edit($id)
     {
-        // Find the user by ID
         $user = User::findOrFail($id);
 
-        // Return the view with the user data
+        abort_unless(Auth::user()->isOwner(), 403);
+        abort_if($user->isOwner(), 403, 'Owner level users cannot be edited from this page.');
+
         return view('level.edit', compact('user'));
     }
 
@@ -46,20 +64,30 @@ class LevelController extends Controller
      */
     public function update(Request $request, $id)
     {
-        // Validate the request
-        $request->validate([
-            'level' => 'required|integer|between:0,2',
-        ]);
-    
-        // Find the user by ID
         $user = User::findOrFail($id);
-    
-        // Update the user's level
-        $user->update(['level' => $request->level]);
-    
-    
-        // Redirect back with a success message
+
+        abort_unless(Auth::user()->isOwner(), 403);
+        abort_if($user->isOwner(), 403, 'Owner level users cannot be changed from this page.');
+
+        $validated = $request->validate([
+            'level' => ['required', 'integer', 'between:0,1'],
+        ]);
+
+        $user->update(['level' => (int) $validated['level']]);
+
         return redirect()->route('level.index')->with('success', 'User level updated successfully.');
+    }
+
+    public function approve($id)
+    {
+        $user = User::findOrFail($id);
+
+        abort_unless(Auth::user()->level >= User::LEVEL_ADMIN, 403);
+        abort_unless($user->isRequest(), 403, 'Only request users can be approved.');
+
+        $user->update(['level' => User::LEVEL_ADMIN]);
+
+        return redirect()->route('level.index')->with('success', 'Request approved and promoted to admin.');
     }
     
 
@@ -71,14 +99,13 @@ class LevelController extends Controller
      */
     public function destroy($id)
     {
-        // Find the user by ID
         $user = User::findOrFail($id);
-    
-        // Delete the user
+
+        abort_unless(Auth::user()->isOwner(), 403);
+        abort_if($user->isOwner(), 403, 'Owner level users cannot be deleted from this page.');
+
         $user->delete();
-    
-    
-        // Redirect back with a success message
+
         return redirect()->route('level.index')->with('success', 'User deleted successfully.');
     }
 }

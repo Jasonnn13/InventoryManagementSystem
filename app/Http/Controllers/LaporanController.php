@@ -10,10 +10,11 @@ use Carbon\Carbon;
 
 class LaporanController extends Controller
 {
-    public function profit()
+    public function profit(Request $request)
     {
         $currentYear = Carbon::now()->year;
         $currentMonth = Carbon::now()->month;
+        $selectedYear = $request->input('year', $currentYear); // Get year from request, default to current year
 
         // Data for the current month
         $penjualanTotalCurrentMonth = Penjualan::whereMonth('created_at', $currentMonth)
@@ -101,9 +102,12 @@ class LaporanController extends Controller
             $profitData[] = $profit;
         }
 
-        // Fetch all laporan records ordered by year and month for display
-        $laporans = Laporan::orderBy('tahun', 'desc')->orderBy('bulan', 'desc')->get();
+        // Fetch all laporan records filtered by selected year
+        $laporans = Laporan::where('tahun', $selectedYear)->orderBy('bulan', 'desc')->get();
 
-        return view('laporan.profit', compact('laporans', 'months', 'penjualanData', 'pembelianData', 'profitData'));
+        // Get all available years for the dropdown
+        $availableYears = Laporan::select('tahun')->distinct()->orderBy('tahun', 'desc')->pluck('tahun');
+
+        return view('laporan.profit', compact('laporans', 'months', 'penjualanData', 'pembelianData', 'profitData', 'selectedYear', 'availableYears'));
     }
 }

@@ -7,6 +7,7 @@ use Carbon\Carbon;
 use App\Models\Penjualan;
 use App\Models\User;
 use App\Models\Pembelian;
+use Illuminate\Support\Facades\DB;
 
 class DashboardController extends Controller
 {
@@ -34,12 +35,12 @@ class DashboardController extends Controller
         for ($i = 11; $i >= 0; $i--) {
             $month = Carbon::today()->startOfMonth()->subMonth($i);
             $year = $month->format('Y');
-            $formattedMonth = $month->shortMonthName;
+            $formattedMonth = $month->format('M');
 
             $penjualanTotal = Penjualan::whereMonth('created_at', $month->month)
                                         ->whereYear('created_at', $month->year)
                                         ->where('status', 'Lunas')
-                                        ->sum('total_netto');
+                                        ->sum(DB::raw('CASE WHEN total_netto IS NULL OR total_netto = 0 THEN total ELSE total_netto END'));
 
             $pembelianTotal = Pembelian::whereMonth('created_at', $month->month)
                                         ->whereYear('created_at', $month->year)
@@ -47,7 +48,7 @@ class DashboardController extends Controller
                 
             $profit = $penjualanTotal - $pembelianTotal;
 
-            $months[] = [$formattedMonth];
+            $months[] = $formattedMonth;
             $penjualanData[] = $penjualanTotal;
             $pembelianData[] = $pembelianTotal;
             $profitData[] = $profit;
