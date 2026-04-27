@@ -9,6 +9,8 @@ use App\Models\GudangStock;
 use App\Models\RincianPembelian;
 use App\Models\RincianPenjualan;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use App\Models\User;
 use Illuminate\Support\Facades\Gate;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -98,6 +100,8 @@ class StockController extends Controller
     
     public function edit($id)
     {
+        $this->authorizeOwner();
+
         $stock = GudangStock::with('stock')->findOrFail($id); // Load the related Stock
         return view('stocks.edit', compact('stock'));
     }
@@ -105,6 +109,8 @@ class StockController extends Controller
     
     public function update(Request $request, $id)
     {
+        $this->authorizeOwner();
+
         $request->validate([
             'name' => 'required|string|max:255',
             'kode' => 'required|string|max:255',
@@ -141,6 +147,7 @@ class StockController extends Controller
 
     public function destroy($id)
     {
+        $this->authorizeOwner();
 
         $stock = GudangStock::findOrFail($id);
         Stock::findOrFail($stock->stocks_id)->decrement('stock', $stock->quantity);
@@ -251,5 +258,12 @@ class StockController extends Controller
             // For example, if you need to set the quantity for each gudang:
             return [$gudangId => ['quantity' => 1]]; // Replace '1' with the actual quantity or other data if needed
         })->toArray();
+    }
+
+    private function authorizeOwner(): void
+    {
+        if (!Auth::check() || Auth::user()->level < User::LEVEL_OWNER) {
+            abort(403, 'Hanya owner yang dapat mengubah atau menghapus stok.');
+        }
     }
 }

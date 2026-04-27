@@ -9,6 +9,7 @@ use App\Models\Supplier;
 use App\Models\Customer;
 use App\Models\Gudang;
 use App\Models\GudangStock;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
@@ -152,6 +153,10 @@ class PenjualanController extends Controller
 
     public function destroy(Penjualan $penjualan)
     {
+        if (Auth::user()->level < User::LEVEL_OWNER) {
+            abort(403, 'Hanya owner yang dapat menghapus penjualan.');
+        }
+
         // Get all rincian penjualan associated with the penjualan
         $rincianpenjualans = RincianPenjualan::where('penjualan_id', $penjualan->id)->get();
         

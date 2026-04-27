@@ -81,12 +81,16 @@
                                 <td>Rp. {{ number_format($stock->stock->jual, 0, ',', '.') }}</td>
                                 <td onclick="event.stopPropagation()">
                                     <div class="flex flex-wrap gap-2">
-                                        <a href="{{ route('stocks.edit', $stock->id) }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Ubah</a>
-                                        <form action="{{ route('stocks.destroy', $stock->id) }}" method="POST" onsubmit="return confirmation(event, this)">
-                                            @csrf
-                                            @method('DELETE')
-                                            <x-danger-button type="submit">Hapus</x-danger-button>
-                                        </form>
+                                        @if (Auth::user()->level >= 2)
+                                            <a href="{{ route('stocks.edit', $stock->id) }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Ubah</a>
+                                            <form action="{{ route('stocks.destroy', $stock->id) }}" method="POST" onsubmit="return confirmation(event, this)">
+                                                @csrf
+                                                @method('DELETE')
+                                                <x-danger-button type="submit">Hapus</x-danger-button>
+                                            </form>
+                                        @else
+                                            <span class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-500 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-400">Owner only</span>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>

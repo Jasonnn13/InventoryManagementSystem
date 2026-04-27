@@ -34,11 +34,15 @@ class RincianPembelianController extends Controller
     public function store(Request $request)
     {
         $this->normalizeStorePrices($request);
+        $request->merge([
+            'total' => $this->normalizeRupiah($request->input('total')),
+        ]);
 
         // Validate the incoming request data
         $validated = $request->validate([
             'supplier_id' => 'required|exists:suppliers,id',
             'pembelian_id' => 'required|exists:pembelian,id',
+            'total' => 'nullable|numeric|min:0',
             'items' => 'required|array',
             'items.new.*.name' => 'nullable|string',
             'items.new.*.quantity' => 'nullable|integer|min:0',
@@ -53,6 +57,8 @@ class RincianPembelianController extends Controller
         $supplierId = $validated['supplier_id'];
         $pembelianId = $validated['pembelian_id'];
         $items = $validated['items'];
+
+        $calculatedTotal = 0;
         
         // Handle new items
         if (isset($items['new']) && is_array($items['new'])) {
@@ -80,6 +86,8 @@ class RincianPembelianController extends Controller
                         'price' => $price,
                         'total' => $price * $quantity,
                     ]);
+
+                    $calculatedTotal += $price * $quantity;
 
                     $pembelian = Pembelian::findOrFail($pembelianId);
                     $gudangId = $pembelian->gudangs_id;
@@ -116,6 +124,8 @@ class RincianPembelianController extends Controller
                         'total' => $existingItem['price'] * $existingItem['quantity'],
                     ]);
 
+                    $calculatedTotal += $existingItem['price'] * $existingItem['quantity'];
+
                     // Find the pembelian and retrieve the related gudang
                     $pembelian = Pembelian::findOrFail($pembelianId);
                     $gudangId = $pembelian->gudangs_id;
@@ -146,6 +156,13 @@ class RincianPembelianController extends Controller
                 }
             }
         }
+
+        $manualTotal = (int) ($validated['total'] ?? 0);
+        $finalTotal = $manualTotal > 0 ? $manualTotal : $calculatedTotal;
+
+        Pembelian::where('id', $pembelianId)->update([
+            'total' => $finalTotal,
+        ]);
 
         
     

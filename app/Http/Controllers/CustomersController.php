@@ -59,8 +59,7 @@ class CustomersController extends Controller
 
         Customer::create($request->all());
 
-        return redirect()->route('customers.index')
-                         ->with('success', 'Customer created successfully.');
+        return $this->redirectToMitraIndex($request, 'Customer created successfully.');
     }
 
     public function edit(Customer $customer)
@@ -78,15 +77,26 @@ class CustomersController extends Controller
 
         $customer->update($request->all());
 
-        return redirect()->route('customers.index')
-                         ->with('success', 'Customer updated successfully.');
+        return $this->redirectToMitraIndex($request, 'Customer updated successfully.');
     }
 
     public function destroy(Customer $customer)
     {
         $customer->delete();
 
-        return redirect()->route('customers.index')
-                         ->with('success', 'Customer deleted successfully.');
+        return $this->redirectToMitraIndex(request(), 'Customer deleted successfully.');
+    }
+
+    private function redirectToMitraIndex(Request $request, string $message)
+    {
+        $query = array_filter([
+            'type' => $request->input('type', 'customer'),
+            'search' => $request->input('search'),
+        ], function ($value) {
+            return $value !== null && $value !== '';
+        });
+
+        return redirect()->route('customers.index', $query)
+                         ->with('success', $message);
     }
 }

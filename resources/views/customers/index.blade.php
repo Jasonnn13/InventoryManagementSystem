@@ -5,9 +5,9 @@
                 <h2 class="app-page-title">{{ $pageTitle }}</h2>
             </div>
             @if ($type === 'supplier')
-                <a href="{{ route('suppliers.create') }}" class="inline-flex items-center justify-center rounded-full border border-black bg-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition duration-150 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 dark:focus:ring-white">Tambah Supplier</a>
+                <a href="{{ route('suppliers.create', ['type' => 'supplier', 'search' => $search]) }}" class="inline-flex items-center justify-center rounded-full border border-black bg-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition duration-150 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 dark:focus:ring-white">Tambah Supplier</a>
             @else
-                <a href="{{ route('customers.create') }}" class="inline-flex items-center justify-center rounded-full border border-black bg-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition duration-150 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 dark:focus:ring-white">Tambah Pelanggan</a>
+                <a href="{{ route('customers.create', ['type' => 'customer', 'search' => $search]) }}" class="inline-flex items-center justify-center rounded-full border border-black bg-black px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-white transition duration-150 hover:bg-neutral-800 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-white dark:bg-white dark:text-black dark:hover:bg-neutral-200 dark:focus:ring-white">Tambah Pelanggan</a>
             @endif
         </div>
     </x-slot>
@@ -17,7 +17,7 @@
             <form action="{{ route('customers.index') }}" method="GET" class="flex flex-col gap-4 sm:flex-row sm:items-end">
                 <div class="w-40">
                     <x-input-label for="type" value="Tipe" />
-                    <select id="type" name="type" class="mt-2 block w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white">
+                    <select id="type" name="type" onchange="this.form.submit()" class="mt-2 block w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white">
                         <option value="customer" @selected($type === 'customer')>Pelanggan</option>
                         <option value="supplier" @selected($type === 'supplier')>Supplier</option>
                     </select>
@@ -59,15 +59,15 @@
                                 <td onclick="event.stopPropagation()">
                                     <div class="flex flex-nowrap items-center gap-2 whitespace-nowrap">
                                         @if ($type === 'supplier')
-                                            <a href="{{ route('suppliers.edit', $partner->id) }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Ubah</a>
-                                            <form action="{{ route('suppliers.destroy', $partner->id) }}" method="POST" onsubmit="return confirmation(event, this)">
+                                            <a href="{{ route('suppliers.edit', ['supplier' => $partner->id, 'type' => 'supplier', 'search' => $search]) }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Ubah</a>
+                                            <form action="{{ route('suppliers.destroy', ['supplier' => $partner->id, 'type' => 'supplier', 'search' => $search]) }}" method="POST" onsubmit="return confirmation(event, this)">
                                                 @csrf
                                                 @method('DELETE')
                                                 <x-danger-button type="submit" class="delete-button">Hapus</x-danger-button>
                                             </form>
                                         @else
-                                            <a href="{{ route('customers.edit', $partner->id) }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Ubah</a>
-                                            <form action="{{ route('customers.destroy', $partner->id) }}" method="POST" onsubmit="return confirmation(event, this)">
+                                            <a href="{{ route('customers.edit', ['customer' => $partner->id, 'type' => 'customer', 'search' => $search]) }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Ubah</a>
+                                            <form action="{{ route('customers.destroy', ['customer' => $partner->id, 'type' => 'customer', 'search' => $search]) }}" method="POST" onsubmit="return confirmation(event, this)">
                                                 @csrf
                                                 @method('DELETE')
                                                 <x-danger-button type="submit" class="delete-button">Hapus</x-danger-button>

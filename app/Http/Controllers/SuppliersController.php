@@ -42,7 +42,7 @@ class SuppliersController extends Controller
         $supplier->address = $request->input('address');
         $supplier->save();
 
-        return redirect()->route('suppliers.index')->with('success', 'Supplier created successfully.');
+        return $this->redirectAfterAction($request, 'Supplier created successfully.');
     }
 
     public function edit($id)
@@ -66,7 +66,7 @@ class SuppliersController extends Controller
             'address' => $request->input('address'),
         ]);
 
-        return redirect()->route('suppliers.index')->with('success', 'Supplier updated successfully.');
+        return $this->redirectAfterAction($request, 'Supplier updated successfully.');
     }
 
 
@@ -75,6 +75,24 @@ class SuppliersController extends Controller
         $supplier = Supplier::findOrFail($id);
         $supplier->delete();
 
-        return redirect()->route('suppliers.index')->with('success', 'Supplier deleted successfully.');
+        return $this->redirectAfterAction(request(), 'Supplier deleted successfully.');
+    }
+
+    private function redirectAfterAction(Request $request, string $message)
+    {
+        if ($request->has('type') || $request->has('search')) {
+            $query = array_filter([
+                'type' => $request->input('type', 'supplier'),
+                'search' => $request->input('search'),
+            ], function ($value) {
+                return $value !== null && $value !== '';
+            });
+
+            return redirect()->route('customers.index', $query)
+                ->with('success', $message);
+        }
+
+        return redirect()->route('suppliers.index')
+            ->with('success', $message);
     }
 }

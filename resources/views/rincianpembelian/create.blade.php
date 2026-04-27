@@ -23,6 +23,21 @@
 
                 <div id="items-container" class="space-y-4"></div>
                 <div id="new-items-container" class="space-y-4"></div>
+
+                <div class="app-card p-5">
+                    <div class="grid gap-4 sm:grid-cols-2">
+                        <div>
+                            <label class="block text-sm font-medium text-neutral-700 dark:text-neutral-300" for="total">Harga akhir</label>
+                            <input class="mt-2 w-full rounded-xl border border-neutral-300 bg-white px-4 py-3 text-sm text-neutral-900 shadow-sm focus:border-black focus:ring-2 focus:ring-black dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:focus:border-white dark:focus:ring-white price-input" type="text" inputmode="numeric" id="total" name="total" placeholder="Masukkan harga akhir manual">
+                            <p class="mt-2 text-xs text-neutral-500 dark:text-neutral-400">Tetap isi manual. Sistem kasih sugesti dari total quantity x harga item.</p>
+                        </div>
+                        <div class="rounded-xl border border-dashed border-neutral-300 bg-neutral-50 p-4 dark:border-neutral-700 dark:bg-neutral-900/50">
+                            <p class="text-xs uppercase tracking-[0.18em] text-neutral-500 dark:text-neutral-400">Sugesti harga akhir</p>
+                            <p id="suggested-total" class="mt-2 text-lg font-semibold text-neutral-900 dark:text-neutral-100">Rp 0</p>
+                            <button type="button" id="use-suggested-total" class="mt-3 inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Gunakan sugesti</button>
+                        </div>
+                    </div>
+                </div>
             </form>
         </section>
     </div>
@@ -66,6 +81,7 @@
 
                 container.insertAdjacentHTML('beforeend', block);
                 newItemIndex += 1;
+                updateSuggestedTotal();
             }
 
             function addExistingItems() {
@@ -96,6 +112,7 @@
                 container.insertAdjacentHTML('beforeend', block);
                 const currentIndex = existingItemsAdded;
                 existingItemsAdded += 1;
+                updateSuggestedTotal();
 
                 $(`#stock-input-${currentIndex}`).autocomplete({
                     source: function (request, response) {
@@ -122,6 +139,7 @@
 
             function removeItem(button) {
                 button.closest('.app-card').remove();
+                updateSuggestedTotal();
             }
 
             // Format currency as IDR
@@ -135,6 +153,32 @@
             // Get numeric value from formatted input
             function getNumericValue(formattedValue) {
                 return formattedValue.replace(/\D/g, '');
+            }
+
+            function toInt(value) {
+                const parsed = parseInt((value || '').toString().replace(/\D/g, ''), 10);
+                return Number.isNaN(parsed) ? 0 : parsed;
+            }
+
+            function updateSuggestedTotal() {
+                let total = 0;
+
+                document.querySelectorAll('input[name*="[quantity]"]').forEach((quantityInput) => {
+                    const name = quantityInput.getAttribute('name') || '';
+                    const prefix = name.replace('[quantity]', '');
+                    const priceInput = document.querySelector(`input[name="${prefix}[price]"]`);
+
+                    const quantity = toInt(quantityInput.value);
+                    const price = toInt(priceInput ? priceInput.value : '0');
+                    total += quantity * price;
+                });
+
+                const suggestedTotal = document.getElementById('suggested-total');
+                if (suggestedTotal) {
+                    suggestedTotal.textContent = `Rp ${new Intl.NumberFormat('id-ID').format(total)}`;
+                }
+
+                return total;
             }
 
             // Add event listeners to price inputs
@@ -159,6 +203,26 @@
                     const diff = newLength - oldLength;
                     input.setSelectionRange(cursorPos + diff, cursorPos + diff);
                 }
+
+                if (
+                    e.target.classList.contains('price-input') ||
+                    (e.target.getAttribute('name') || '').includes('[quantity]')
+                ) {
+                    updateSuggestedTotal();
+                }
+            });
+
+            document.getElementById('use-suggested-total').addEventListener('click', function () {
+                const suggested = updateSuggestedTotal();
+                const totalInput = document.getElementById('total');
+                if (totalInput) {
+                    totalInput.value = formatIDR(String(suggested));
+                    totalInput.dispatchEvent(new Event('input', { bubbles: true }));
+                }
+            });
+
+            document.addEventListener('DOMContentLoaded', function () {
+                updateSuggestedTotal();
             });
 
             // Before form submission, restore numeric values

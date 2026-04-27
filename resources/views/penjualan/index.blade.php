@@ -89,16 +89,15 @@
                                     <div class="flex items-center gap-2 whitespace-nowrap">
                                         <button type="button" data-download-toggle="{{ $penjualan->id }}" data-invoice-url="{{ route('rincianpenjualan.invoice', $penjualan->id) }}" data-surat-jalan-url="{{ route('rincianpenjualan.suratjalan', $penjualan->id) }}" class="download-toggle cursor-pointer rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900">Unduh</button>
 
-                                        @php
-                                            $canManagePenjualan = Auth::user()->level !== 1 || Auth::user()->id === $penjualan->user->id;
-                                        @endphp
-                                        <a href="{{ route('penjualan.edit', $penjualan->id) }}" class="edit-link inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white" @if(! $canManagePenjualan) onclick="event.preventDefault(); event.stopPropagation(); permissionDenied('Maaf, Anda tidak memiliki izin untuk mengubah penjualan ini'); return false;" @endif>Ubah</a>
+                                        <a href="{{ route('penjualan.edit', $penjualan->id) }}" class="edit-link inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-3 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Ubah</a>
 
-                                        <form action="{{ route('penjualan.destroy', $penjualan->id) }}" method="POST" @if(! $canManagePenjualan) onsubmit="event.preventDefault(); event.stopPropagation(); permissionDenied('Maaf, Anda tidak memiliki izin untuk menghapus penjualan ini'); return false;" @else onsubmit="return confirmation(event, this)" @endif>
-                                            @csrf
-                                            @method('DELETE')
-                                            <x-danger-button type="submit" class="delete-button">Hapus</x-danger-button>
-                                        </form>
+                                        @if (Auth::user()->level >= 2)
+                                            <form action="{{ route('penjualan.destroy', $penjualan->id) }}" method="POST" onsubmit="return confirmation(event, this)">
+                                                @csrf
+                                                @method('DELETE')
+                                                <x-danger-button type="submit" class="delete-button">Hapus</x-danger-button>
+                                            </form>
+                                        @endif
                                     </div>
                                 </td>
                             </tr>
@@ -123,7 +122,6 @@
         <script src="https://cdnjs.cloudflare.com/ajax/libs/sweetalert/2.1.2/sweetalert.min.js" integrity="sha512-AA1Bzp5Q0K1KanKKmvN/4d3IRKVlv9PYgwFPvm32nPO6QS8yH1HO7LbgB1pgiOxPtfeg5zEn2ba64MUcqJx6CA==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
         <script>
             const userLevel = @json(Auth::user()->level);
-            const userId = @json(Auth::user()->id);
 
             function runSwal(options, onConfirm) {
                 const invoke = function () {
@@ -244,19 +242,10 @@
 
             document.addEventListener('DOMContentLoaded', function () {
                 document.querySelectorAll('tbody tr[data-created-by]').forEach(function (row) {
-                    const createdBy = parseInt(row.getAttribute('data-created-by'), 10);
                     const editButton = row.querySelector('.edit-link');
                     const deleteButton = row.querySelector('.delete-button');
 
-                    if (userLevel === 1 && userId !== createdBy) {
-                        if (editButton && !editButton.hasAttribute('onclick')) {
-                            editButton.addEventListener('click', function (event) {
-                                event.preventDefault();
-                                event.stopPropagation();
-                                permissionDenied('Maaf, Anda tidak memiliki izin untuk mengubah penjualan ini');
-                            });
-                        }
-
+                    if (userLevel < 2) {
                         if (deleteButton && !deleteButton.hasAttribute('onsubmit')) {
                             deleteButton.addEventListener('click', function (event) {
                                 event.preventDefault();

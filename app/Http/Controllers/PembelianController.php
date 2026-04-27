@@ -8,6 +8,7 @@ use App\Models\Stock;
 use App\Models\Supplier;
 use App\Models\Gudang;
 use App\Models\GudangStock;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
@@ -56,7 +57,6 @@ class PembelianController extends Controller
     {
         $validated = $request->validate([
             'suppliers_id' => 'required|exists:suppliers,id',
-            'total' => 'required|numeric|min:0',
             'gudangs_id' => 'required|exists:gudangs,id',
         ]);
 
@@ -66,7 +66,7 @@ class PembelianController extends Controller
 
         $pembelian = Pembelian::create([
             'suppliers_id' => $validated['suppliers_id'],
-            'total' => $validated['total'],
+            'total' => 0,
             'users_id' => $userId,
             'gudangs_id' => $validated['gudangs_id'],
         ]);
@@ -154,6 +154,10 @@ class PembelianController extends Controller
 
     public function destroy(Pembelian $pembelian)
     {
+        if (Auth::user()->level < User::LEVEL_OWNER) {
+            abort(403, 'Hanya owner yang dapat menghapus pembelian.');
+        }
+
         DB::transaction(function () use ($pembelian) {
             $rincianPembelians = RincianPembelian::where('pembelian_id', $pembelian->id)
                 ->lockForUpdate()
