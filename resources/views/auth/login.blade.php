@@ -31,17 +31,16 @@
                 <span>Ingat saya</span>
             </label>
 
-            <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-                <div class="flex flex-wrap gap-3">
+            <div class="space-y-3">
+                <div class="flex items-center gap-3">
                     @if (Route::has('register'))
                         <a href="{{ route('register') }}" class="inline-flex items-center justify-center rounded-full border border-neutral-300 bg-white px-4 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-900 shadow-sm transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:border-neutral-700 dark:bg-neutral-950 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white">Daftar</a>
                     @endif
-                    @if (Route::has('password.request'))
-                        <a href="{{ route('password.request') }}" class="inline-flex items-center justify-center rounded-full border border-transparent px-1 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-700 underline decoration-neutral-400 underline-offset-4 transition hover:text-black dark:text-neutral-300 dark:hover:text-white">Lupa kata sandi</a>
-                    @endif
+                    <x-primary-button type="submit">Masuk</x-primary-button>
                 </div>
-
-                <x-primary-button type="submit">Masuk</x-primary-button>
+                @if (Route::has('password.request'))
+                    <a href="{{ route('password.request') }}" class="inline-flex items-center justify-center rounded-full border border-transparent px-1 py-2 text-xs font-semibold uppercase tracking-[0.18em] text-neutral-700 underline decoration-neutral-400 underline-offset-4 transition hover:text-black dark:text-neutral-300 dark:hover:text-white">Lupa kata sandi</a>
+                @endif
             </div>
         </form>
     </div>

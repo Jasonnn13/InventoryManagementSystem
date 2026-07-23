@@ -59,22 +59,13 @@
         @vite(['resources/css/app.css', 'resources/js/app.js'])
     </head>
     <body class="font-sans text-neutral-900 antialiased dark:text-neutral-100">
-        <div class="min-h-screen bg-[var(--app-bg)] px-4 py-10 sm:px-6 lg:px-8">
-            <div class="mx-auto mb-4 flex max-w-5xl justify-end">
+        <div class="flex min-h-screen flex-col bg-[var(--app-bg)] px-4 py-10 sm:px-6 lg:px-8">
+            <div class="mx-auto mb-4 flex w-full max-w-5xl justify-end">
                 <button type="button" onclick="toggleTheme()" class="inline-flex items-center gap-2 rounded-full border border-[color:var(--app-border)] bg-[color:var(--app-surface-muted)] px-4 py-2 text-sm font-medium text-neutral-900 transition duration-150 hover:border-black hover:bg-neutral-50 focus:outline-none focus:ring-2 focus:ring-black focus:ring-offset-2 dark:text-neutral-100 dark:hover:border-white dark:hover:bg-neutral-900 dark:focus:ring-white" aria-label="Ganti tema">
                     Ganti tema
                 </button>
             </div>
-            <div class="mx-auto flex min-h-[calc(100vh-5rem)] max-w-5xl flex-col items-center justify-center gap-8 lg:flex-row lg:items-stretch">
-                <div class="flex w-full max-w-lg flex-col justify-between rounded-3xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-8 shadow-[var(--app-shadow)] lg:p-10">
-                    <div class="space-y-4">
-                        <a href="/" class="inline-flex items-center gap-3 text-sm font-semibold uppercase tracking-[0.24em] text-neutral-900 dark:text-neutral-100">
-                            <span class="flex h-11 w-11 items-center justify-center rounded-full border border-black bg-black text-white dark:border-white dark:bg-white dark:text-black">I</span>
-                            {{ config('app.name', 'CVHaathee') }}
-                        </a>
-                    </div>
-                </div>
-
+            <div class="mx-auto flex w-full max-w-5xl flex-1 flex-col items-center justify-center">
                 <div class="w-full max-w-md rounded-3xl border border-[color:var(--app-border)] bg-[color:var(--app-surface)] p-6 shadow-[var(--app-shadow)] sm:p-8">
                     {{ $slot }}
                 </div>
