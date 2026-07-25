@@ -17,19 +17,9 @@ class OverduePaymentMail extends Mailable
     /**
      * Create a new message instance.
      */
-        public function __construct($penjualan)
+    public function __construct(public Penjualan $penjualan)
     {
-        $this->penjualan = $penjualan;
     }
-
-    public function build()
-    {
-        return $this->to('sniperblack185@gmail.com')
-                    ->subject('Overdue Payment Notification')
-                    ->view('overdue')
-                    ->with('penjualan', $this->penjualan);
-    }
-
 
     /**
      * Get the message envelope.
@@ -37,7 +27,8 @@ class OverduePaymentMail extends Mailable
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Overdue Payment Mail',
+            to: ['sniperblack185@gmail.com'],
+            subject: 'Overdue Payment Notification',
         );
     }
 
@@ -48,8 +39,7 @@ class OverduePaymentMail extends Mailable
     {
         return new Content(
             view: 'overdue',
+            with: ['penjualan' => $this->penjualan],
         );
     }
-
-
 }

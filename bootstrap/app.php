@@ -19,4 +19,6 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         //
-    })->create();
+    })
+    ->withSchedule(require __DIR__.'/../app/Console/schedule.php')
+    ->create();
